@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { 
   Copy, Check, Eye, EyeOff, Edit2, Trash2, X,
-  User, CreditCard, Landmark, Mail, Lock, FileText, Phone, Calendar
+  User, CreditCard, Landmark, Mail, Lock, FileText, Phone, Calendar,
+  Download, Share2
 } from "lucide-react";
 import { CategorySchema, formatExpiryToMMYY, formatCardNumber } from "../types";
 
@@ -543,8 +544,79 @@ export default function RecordItemCard({
 
   if (category.id === "documents") {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [sharedStatus, setSharedStatus] = useState<string | null>(null);
+
     const isImage = record.FileAttachment && (record.FileAttachment.startsWith("data:image/") || record.FileAttachment.startsWith("data:image/svg"));
     const isPdf = record.FileAttachment && record.FileAttachment.startsWith("data:application/pdf");
+
+    const handleDownload = () => {
+      if (!record.FileAttachment) return;
+      const link = document.createElement("a");
+      link.href = record.FileAttachment;
+      
+      let ext = "jpg";
+      if (record.FileAttachment.includes("pdf")) ext = "pdf";
+      else if (record.FileAttachment.includes("png")) ext = "png";
+      else if (record.FileAttachment.includes("svg")) ext = "svg";
+      
+      const sanitizedTitle = (record.Title || "document").replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      link.download = `${sanitizedTitle}.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    const handleShare = async () => {
+      if (!record.FileAttachment) return;
+      
+      let ext = "jpg";
+      if (record.FileAttachment.includes("pdf")) ext = "pdf";
+      else if (record.FileAttachment.includes("png")) ext = "png";
+      
+      const sanitizedTitle = (record.Title || "Document").replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const fileName = `${sanitizedTitle}.${ext}`;
+      const shareText = `Vasu Vault Secure Document:\nTitle: ${record.Title || "Untitled"}\nType: ${record.DocType || "Document"}\nDoc Number: ${record.DocNumber || "N/A"}`;
+
+      if (navigator.share) {
+        try {
+          const dataUrl = record.FileAttachment;
+          const blob = await (await fetch(dataUrl)).blob();
+          const file = new File([blob], fileName, { type: blob.type });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: record.Title || "Secure Document",
+              text: shareText,
+            });
+            setSharedStatus("Shared!");
+            setTimeout(() => setSharedStatus(null), 2000);
+            return;
+          } else {
+            await navigator.share({
+              title: record.Title || "Secure Document",
+              text: shareText,
+            });
+            setSharedStatus("Shared!");
+            setTimeout(() => setSharedStatus(null), 2000);
+            return;
+          }
+        } catch (err) {
+          console.log("Web Share silent abort:", err);
+        }
+      }
+
+      // Clipboard fallback
+      try {
+        await navigator.clipboard.writeText(`${shareText}\n\n[Attachment Data]\n${record.FileAttachment}`);
+        setSharedStatus("Copied!");
+        setTimeout(() => setSharedStatus(null), 2000);
+      } catch (err) {
+        console.error("Clipboard write failure:", err);
+        setSharedStatus("Failed Copy");
+        setTimeout(() => setSharedStatus(null), 2000);
+      }
+    };
 
     const formatBytes = (bytes: number) => {
       if (bytes === 0) return "0 Bytes";
@@ -646,21 +718,45 @@ export default function RecordItemCard({
         </div>
 
         {/* Footer controls */}
-        <div className="flex items-center justify-end gap-3 pt-4 mt-6 border-t border-white/5 text-xs text-slate-300">
-          <button
-            onClick={() => onEdit(record)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold transition duration-200 cursor-pointer border border-white/5"
-          >
-            <Edit2 className="h-3.5 w-3.5 text-purple-400" />
-            Edit
-          </button>
-          <button
-            onClick={() => onDelete(rowNum)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/25 text-red-300 font-bold transition duration-200 cursor-pointer border border-red-500/10"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete
-          </button>
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between pt-4 mt-6 border-t border-white/5 text-xs text-slate-350">
+          <div className="flex items-center gap-2">
+            {record.FileAttachment && (
+              <>
+                <button
+                  onClick={handleDownload}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 font-extrabold border border-purple-500/10 transition cursor-pointer"
+                  title="Download File"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>Download</span>
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 font-extrabold border border-purple-500/10 transition cursor-pointer"
+                  title="Share File"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  <span>{sharedStatus || "Share"}</span>
+                </button>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              onClick={() => onEdit(record)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold transition duration-200 cursor-pointer border border-white/5"
+            >
+              <Edit2 className="h-3.5 w-3.5 text-purple-400" />
+              Edit
+            </button>
+            <button
+              onClick={() => onDelete(rowNum)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/25 text-red-300 font-bold transition duration-200 cursor-pointer border border-red-500/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </button>
+          </div>
         </div>
 
         {/* Lightbox Modal */}
@@ -694,13 +790,22 @@ export default function RecordItemCard({
                 <div className="text-slate-400 font-mono">
                   {record.DocNumber ? `Reference: ${record.DocNumber}` : "Vault Sealed Digital Scan"}
                 </div>
-                <a 
-                  href={record.FileAttachment} 
-                  download={record.Title || "document"} 
-                  className="px-4 py-2 bg-purple-650 hover:bg-purple-600 font-black text-white rounded-xl shadow-lg shadow-purple-500/20 transition cursor-pointer flex items-center gap-1.5"
-                >
-                  Download File
-                </a>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleDownload}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-550 font-black text-white rounded-xl shadow-lg shadow-purple-500/20 transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    Download File
+                  </button>
+                  <button
+                    onClick={handleShare}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-705 font-black text-slate-200 border border-white/5 rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Share2 className="h-3.5 w-3.5" />
+                    {sharedStatus || "Share"}
+                  </button>
+                </div>
               </div>
 
               {/* Viewer Area */}
