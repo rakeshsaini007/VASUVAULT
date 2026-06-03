@@ -7,7 +7,7 @@ interface CardFormModalProps {
   onClose: () => void;
   category: CategorySchema;
   initialData?: Record<string, any> | null;
-  onSave: (data: Record<string, any>) => Promise<boolean>;
+  onSave: (data: Record<string, any>) => Promise<boolean | { success: boolean; error?: string }>;
   isSaving: boolean;
 }
 
@@ -307,11 +307,19 @@ export default function CardFormModal({
     }
 
     setGeneralError("");
-    const success = await onSave(processedData);
-    if (success) {
-      onClose();
+    const result = await onSave(processedData);
+    if (typeof result === "object") {
+      if (result.success) {
+        onClose();
+      } else {
+        setGeneralError(result.error || "An error occurred while saving the record. Please check your setup.");
+      }
     } else {
-      setGeneralError("An error occurred while saving the record. Please check your setup.");
+      if (result) {
+        onClose();
+      } else {
+        setGeneralError("An error occurred while saving the record. Please check your setup.");
+      }
     }
   };
 

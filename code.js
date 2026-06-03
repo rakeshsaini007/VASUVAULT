@@ -55,6 +55,12 @@ function alignHeaders(sheet, configuredHeaders) {
     return;
   }
   
+  // Ensure the spreadsheet grid is physically wide enough to fit our configured headers to avoid Range errors
+  var maxCols = sheet.getMaxColumns();
+  if (maxCols < configuredHeaders.length) {
+    sheet.insertColumnsAfter(maxCols, configuredHeaders.length - maxCols);
+  }
+  
   // Check if first row already matches the configuredHeaders exactly
   var currentHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
     return h ? h.toString().trim() : "";

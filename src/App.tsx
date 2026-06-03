@@ -89,8 +89,8 @@ export default function App() {
   }, []);
 
   // Save/Update helper
-  const handleSaveRecord = async (formData: Record<string, any>): Promise<boolean> => {
-    if (!selectedCategory) return false;
+  const handleSaveRecord = async (formData: Record<string, any>): Promise<{ success: boolean; error?: string }> => {
+    if (!selectedCategory) return { success: false, error: "No category selected." };
     setIsSaving(true);
     try {
       let result;
@@ -109,14 +109,14 @@ export default function App() {
       if (result.success) {
         showSuccessAlert(result.message);
         await loadWorkspaceData(false); // reload lists without blocking spinner
-        return true;
+        return { success: true };
       } else {
         setErrorMsg(result.message);
-        return false;
+        return { success: false, error: result.message };
       }
     } catch (e: any) {
       setErrorMsg("Failed to deliver submission: " + e.message);
-      return false;
+      return { success: false, error: e.message };
     } finally {
       setIsSaving(false);
     }

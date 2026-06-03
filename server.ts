@@ -75,13 +75,38 @@ async function startServer() {
       }
 
       console.log(`[Proxy POST] Forwarding action: ${bodyData?.action} to: ${url}`);
-      const response = await fetch(url, {
+      
+      let currentUrl = url;
+      let response = await fetch(currentUrl, {
         method: "POST",
         headers: {
           "Content-Type": "text/plain;charset=utf-8"
         },
-        body: JSON.stringify(bodyData)
+        body: JSON.stringify(bodyData),
+        redirect: "manual"
       });
+
+      // Google Apps Script usually returns 301, 302, 303, 307 or 308 for redirections
+      let redirectCount = 0;
+      const MAX_REDIRECTS = 5;
+      while (
+        (response.status === 301 || response.status === 302 || response.status === 303 || response.status === 307 || response.status === 308) &&
+        redirectCount < MAX_REDIRECTS
+      ) {
+        const redirectUrl = response.headers.get("location");
+        if (!redirectUrl) {
+          break;
+        }
+        
+        console.log(`[Proxy POST] Redirecting (${response.status}) to: ${redirectUrl}`);
+        currentUrl = redirectUrl;
+        redirectCount++;
+
+        response = await fetch(currentUrl, {
+          method: "GET",
+          redirect: "manual"
+        });
+      }
 
       if (!response.ok) {
         throw new Error(`Google Sheets script returned non-200 status: ${response.status}`);
