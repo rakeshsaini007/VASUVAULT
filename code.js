@@ -44,6 +44,46 @@ function doGet(e) {
 }
 
 /**
+ * Helper to ensure the sheet's header row is perfectly aligned with the target system schema.
+ * This overwrites the first row if there is any mismatch in order or spelling and clears any excess columns.
+ */
+function alignHeaders(sheet, configuredHeaders) {
+  var lastCol = sheet.getLastColumn();
+  if (lastCol === 0) {
+    sheet.appendRow(configuredHeaders);
+    return;
+  }
+  
+  // Check if first row already matches the configuredHeaders exactly
+  var currentHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+    return h ? h.toString().trim() : "";
+  });
+  
+  var needsAlignment = false;
+  if (currentHeaders.length < configuredHeaders.length) {
+    needsAlignment = true;
+  } else {
+    for (var i = 0; i < configuredHeaders.length; i++) {
+      if (currentHeaders[i] !== configuredHeaders[i]) {
+        needsAlignment = true;
+        break;
+      }
+    }
+  }
+  
+  if (needsAlignment) {
+    // Overwrite the header row to match the configured structure exactly
+    var headerRange = sheet.getRange(1, 1, 1, configuredHeaders.length);
+    headerRange.setValues([configuredHeaders]);
+    
+    // Clear any extra header values in columns beyond our configuration to keep the sheet layout clean
+    if (lastCol > configuredHeaders.length) {
+      sheet.getRange(1, configuredHeaders.length + 1, 1, lastCol - configuredHeaders.length).clearContent();
+    }
+  }
+}
+
+/**
  * Handle POST requests - Adds, updates, or deletes records.
  * We use text/plain POST content to avoid pre-flight CORS preflight checks in browsers.
  */
@@ -63,34 +103,15 @@ function doPost(e) {
     
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
-      sheet.appendRow(configuredHeaders);
     }
     
-    // Read actual headers to stay aligned with current sheet structure
-    var lastCol = sheet.getLastColumn();
-    var actualHeaders = [];
-    if (lastCol > 0) {
-      actualHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
-        return h ? h.toString().trim() : "";
-      });
-    } else {
-      actualHeaders = configuredHeaders.slice();
-      sheet.appendRow(actualHeaders);
-    }
-    
-    // Self-healing: Automatically append any newly configured schema columns to the sheet
-    for (var k = 0; k < configuredHeaders.length; k++) {
-      var confH = configuredHeaders[k];
-      if (actualHeaders.indexOf(confH) === -1) {
-        actualHeaders.push(confH);
-        sheet.getRange(1, actualHeaders.length).setValue(confH);
-      }
-    }
+    // Ensure actual sheet headers match the configuration exactly before any write
+    alignHeaders(sheet, configuredHeaders);
     
     if (action === "add") {
       var newRow = [];
-      for (var i = 0; i < actualHeaders.length; i++) {
-        var key = actualHeaders[i];
+      for (var i = 0; i < configuredHeaders.length; i++) {
+        var key = configuredHeaders[i];
         newRow.push(data[key] !== undefined ? data[key] : "");
       }
       sheet.appendRow(newRow);
@@ -103,10 +124,10 @@ function doPost(e) {
       if (!rowNum || rowNum < 2) {
         throw new Error("Invalid or missing row number: " + rowNum);
       }
-      var range = sheet.getRange(rowNum, 1, 1, actualHeaders.length);
+      var range = sheet.getRange(rowNum, 1, 1, configuredHeaders.length);
       var values = [];
-      for (var i = 0; i < actualHeaders.length; i++) {
-        var key = actualHeaders[i];
+      for (var i = 0; i < configuredHeaders.length; i++) {
+        var key = configuredHeaders[i];
         values.push(data[key] !== undefined ? data[key] : "");
       }
       range.setValues([values]);
@@ -150,29 +171,10 @@ function readAllSheetsData() {
     
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
-      sheet.appendRow(configuredHeaders);
     }
     
-    // Read actual headers (row 1)
-    var lastCol = sheet.getLastColumn();
-    var actualHeaders = [];
-    if (lastCol > 0) {
-      actualHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
-        return h ? h.toString().trim() : "";
-      });
-    } else {
-      actualHeaders = configuredHeaders.slice();
-      sheet.appendRow(actualHeaders);
-    }
-    
-    // Check for missing configured headers, and dynamically append them
-    for (var k = 0; k < configuredHeaders.length; k++) {
-      var confH = configuredHeaders[k];
-      if (actualHeaders.indexOf(confH) === -1) {
-        actualHeaders.push(confH);
-        sheet.getRange(1, actualHeaders.length).setValue(confH);
-      }
-    }
+    // Ensure actual sheet headers match configuration exactly before any read
+    alignHeaders(sheet, configuredHeaders);
     
     var dataRange = sheet.getDataRange();
     var rows = dataRange.getValues();
@@ -189,10 +191,11 @@ function readAllSheetsData() {
       
       for (var j = 0; j < configuredHeaders.length; j++) {
         var key = configuredHeaders[j];
-        var colIndex = actualHeaders.indexOf(key);
-        var val = colIndex !== -1 ? row[colIndex] : "";
+        var val = row[j];
         
-        if (val instanceof Date) {
+        if (val === undefined || val === null) {
+          record[key] = "";
+        } else if (val instanceof Date) {
           // Format date strings as YYYY-MM-DD
           try {
             var tz = ss.getSpreadsheetTimeZone();
@@ -201,7 +204,7 @@ function readAllSheetsData() {
             record[key] = val.toISOString().slice(0, 10);
           }
         } else {
-          record[key] = val !== undefined ? val.toString() : "";
+          record[key] = val.toString();
         }
       }
       dataList.push(record);
@@ -210,6 +213,7 @@ function readAllSheetsData() {
   }
   return result;
 }
+
 
 /**
  * Retained for backward-compatibility if referenced. Returns the output object directly.
