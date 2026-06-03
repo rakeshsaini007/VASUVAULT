@@ -216,33 +216,43 @@ export default function CardFormModal({
     }
   };
 
+  const getCategoryThemeColors = (id: string) => {
+    switch (id) {
+      case "personal": return "indigo-500 hover:shadow-indigo-500/25";
+      case "financial": return "emerald-500 hover:shadow-emerald-500/25";
+      case "card": return "cyan-500 hover:shadow-cyan-500/25";
+      case "media": return "amber-500 hover:shadow-amber-500/25";
+      default: return "rose-500 hover:shadow-rose-500/25";
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" id="form-modal-backdrop">
       {/* Overlay Backdrop */}
       <div 
-        className="fixed inset-0 bg-neutral-900/65 backdrop-blur-sm transition-opacity" 
+        className="fixed inset-0 bg-slate-950/80 backdrop-blur-md transition-opacity" 
         onClick={onClose}
       />
 
       <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
         <div 
-          className="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg border border-neutral-100"
+          className="relative transform overflow-hidden rounded-3xl bg-slate-950 border border-white/10 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-lg"
           id="form-modal-container"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-white/5 px-6 py-5">
             <div>
-              <h3 className="text-lg font-semibold text-neutral-900">
+              <h3 className="text-lg font-black text-white">
                 {initialData ? "Edit Record" : `Add New ${category.title}`}
               </h3>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-slate-400 mt-1 leading-normal">
                 Saved directly to Google Sheets category "{category.sheetName}"
               </p>
             </div>
             <button
               id="btn-close-modal"
               onClick={onClose}
-              className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-50 hover:text-neutral-700 transition"
+              className="rounded-xl p-2 text-slate-400 hover:bg-white/5 hover:text-white transition duration-200"
             >
               <X className="h-5 w-5" />
             </button>
@@ -250,10 +260,10 @@ export default function CardFormModal({
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
-            <div className="bg-white px-6 py-5 max-h-[60vh] overflow-y-auto space-y-4">
+            <div className="bg-slate-950 px-6 py-6 max-h-[60vh] overflow-y-auto space-y-5">
               {generalError && (
-                <div className="flex items-start gap-2.5 rounded-lg bg-rose-50 p-3 text-sm text-rose-800 border border-rose-100">
-                  <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-3 rounded-2xl bg-rose-500/10 p-4 text-xs text-rose-300 border border-rose-500/20 shadow-lg animate-pulse">
+                  <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
                   <span>{generalError}</span>
                 </div>
               )}
@@ -261,9 +271,9 @@ export default function CardFormModal({
               {category.fields.map(field => {
                 const hasError = !!errors[field.key];
                 return (
-                  <div key={field.key} className="space-y-1">
-                    <label className="text-xs font-medium text-neutral-700 block">
-                      {field.label} {field.required && <span className="text-rose-500">*</span>}
+                  <div key={field.key} className="space-y-2">
+                    <label className="text-xs font-black text-slate-350 tracking-wider block">
+                      {field.label} {field.required && <span className="text-rose-400">*</span>}
                     </label>
 
                     {field.type === "select" ? (
@@ -271,10 +281,10 @@ export default function CardFormModal({
                         id={`input-${field.key}`}
                         value={formData[field.key] || ""}
                         onChange={(e) => handleInputChange(field.key, e.target.value)}
-                        className={`w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 transition ${
+                        className={`w-full rounded-2xl border px-4 py-3 text-sm bg-slate-900 border-white/10 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${
                           hasError 
-                            ? "border-rose-300 focus:border-rose-500 focus:ring-rose-100" 
-                            : "border-neutral-200 focus:border-neutral-950 focus:ring-neutral-100"
+                            ? "border-rose-500 ring-rose-500/20" 
+                            : "focus:border-indigo-400"
                         }`}
                       >
                         {field.options?.map(opt => (
@@ -289,16 +299,17 @@ export default function CardFormModal({
                         value={formData[field.key] || ""}
                         onChange={(e) => handleInputChange(field.key, e.target.value)}
                         onBlur={(e) => handleBlur(field.key, e.target.value)}
-                        className={`w-full rounded-lg border px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 transition ${
+                        className={`w-full rounded-2xl border px-4 py-3 text-sm bg-white/5 border-white/10 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${
                           hasError 
-                            ? "border-rose-200 focus:border-rose-500 focus:ring-rose-150" 
-                            : "border-neutral-200 focus:border-neutral-950 focus:ring-neutral-100"
+                            ? "border-rose-500 ring-2 ring-rose-500/20" 
+                            : "focus:border-indigo-500"
                         }`}
                       />
                     )}
 
                     {hasError && (
-                      <p className="text-xs text-rose-600 font-medium">
+                      <p className="text-xs text-rose-400 font-bold ml-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
                         {errors[field.key]}
                       </p>
                     )}
@@ -308,13 +319,13 @@ export default function CardFormModal({
             </div>
 
             {/* Footer Actions */}
-            <div className="bg-neutral-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-neutral-100">
+            <div className="bg-white/5 px-6 py-5 flex items-center justify-end gap-3.5 border-t border-white/10">
               <button
                 id="btn-cancel"
                 type="button"
                 onClick={onClose}
                 disabled={isSaving}
-                className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100 transition disabled:opacity-50"
+                className="rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white transition disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -322,22 +333,25 @@ export default function CardFormModal({
                 id="btn-submit"
                 type="submit"
                 disabled={isSaving}
-                className={`rounded-lg bg-neutral-950 text-white px-4 py-2 text-xs font-medium hover:bg-neutral-800 active:bg-neutral-900 transition flex items-center gap-1.5 disabled:opacity-75`}
+                className={`group relative overflow-hidden rounded-2xl shadow-xl transition-all duration-300 hover:scale-[1.02] border border-white/10 flex items-center justify-center gap-2 px-6 py-3 text-white font-black text-xs tracking-wider`}
               >
-                {isSaving ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-3.5 w-3.5" />
-                    Save Record
-                  </>
-                )}
+                <div className={`absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600`} />
+                <span className="relative flex items-center gap-1.5">
+                  {isSaving ? (
+                    <>
+                      <svg className="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      SAVING...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" />
+                      SAVE RECORD
+                    </>
+                  )}
+                </span>
               </button>
             </div>
           </form>

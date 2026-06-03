@@ -73,7 +73,6 @@ export default function App() {
       setData(result.data);
       setIsLive(result.isLive);
       if (result.error) {
-        // Soft error notice (shows connection failures but doesn't crash the app)
         setErrorMsg(result.error);
       }
     } catch (err: any) {
@@ -218,525 +217,635 @@ export default function App() {
     return data[sheetName]?.length || 0;
   };
 
+  // Highlights / Color profiles class map based on category
+  const getCategoryStripeClass = (catId: string) => {
+    switch (catId) {
+      case "personal": return "from-blue-400 to-indigo-600";
+      case "financial": return "from-emerald-400 to-teal-600";
+      case "card": return "from-cyan-400 to-blue-500";
+      case "media": return "from-amber-400 to-orange-600";
+      default: return "from-rose-400 to-pink-600";
+    }
+  };
+
+  const getCategoryTextColors = (catId: string) => {
+    switch (catId) {
+      case "personal": return "text-blue-400 group-hover:from-blue-400 group-hover:to-indigo-300";
+      case "financial": return "text-emerald-400 group-hover:from-emerald-400 group-hover:to-teal-300";
+      case "card": return "text-cyan-400 group-hover:from-cyan-400 group-hover:to-blue-300";
+      case "media": return "text-amber-400 group-hover:from-amber-400 group-hover:to-orange-300";
+      default: return "text-rose-400 group-hover:from-rose-400 group-hover:to-pink-300";
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-zinc-50/70 flex flex-col text-zinc-900 selection:bg-zinc-900 selection:text-white font-sans" id="main-vault-root">
+    <div className="bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 min-h-screen font-sans text-white relative overflow-x-hidden selection:bg-indigo-600/50 selection:text-white flex flex-col" id="main-vault-root">
       
-      {/* 1. TOP HEADER & TELEMETRY CONTROL */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-zinc-200/60 sticky top-0 z-40" id="global-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          
-          {/* Logo Brand */}
-          <div className="flex items-center gap-3 self-start sm:self-center">
-            <div className="h-9 w-9 rounded-lg bg-zinc-900 text-white flex items-center justify-center shadow-sm">
-              <ShieldCheck className="h-5.5 w-5.5 stroke-[1.5]" />
-            </div>
-            <div>
-              <h1 className="text-sm md:text-base font-bold tracking-tight text-zinc-900 leading-tight">
-                Personal Vault
-              </h1>
-              <p className="text-[10.5px] text-zinc-400 font-normal mt-0.5">
-                Client Dashboard connected to spreadsheet schemas
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Info Alerts / Mode State */}
-          <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
-            
-            {/* Live Indicator */}
-            {isLive ? (
-              <div 
-                id="live-status-connected"
-                onClick={() => setIsSetupOpen(true)}
-                className="inline-flex items-center justify-center rounded-full bg-zinc-50 border border-zinc-200 p-1 cursor-pointer hover:bg-zinc-100 transition duration-150"
-                title="Your edits are sending real HTTP POST and GET requests directly to live Google Sheets: Connected"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-              </div>
-            ) : (
-              <div 
-                id="live-status-simulated"
-                onClick={() => setIsSetupOpen(true)}
-                className="inline-flex items-center justify-center rounded-full bg-zinc-100/80 border border-zinc-200 p-1 cursor-pointer hover:bg-zinc-200/50 transition duration-150"
-                title="Currently simulating Google Sheets saving locally: Click to connect. Sandbox Mode"
-              >
-                <span className="relative flex h-2 w-2">
-                  <span className="h-2 w-2 rounded-full bg-amber-500"></span>
-                </span>
-              </div>
-            )}
-
-            {/* Quick Setup Trigger */}
-            <button
-              id="btn-settings-toggle"
-              onClick={() => setIsSetupOpen(true)}
-              className="p-1 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-600 hover:border-zinc-300 transition-all duration-150 cursor-pointer"
-              title="Connect Sheets Settings"
-            >
-              <Settings className="h-3.5 w-3.5 text-zinc-500" />
-            </button>
-            
-            {/* Refresh button */}
-            <button
-              id="btn-manual-sync"
-              onClick={() => loadWorkspaceData()}
-              className="p-1 rounded-md border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-600 hover:border-zinc-300 transition-all duration-150 cursor-pointer"
-              title="Reload data from server"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-zinc-900" : ""}`} />
-            </button>
-          </div>
+      {/* LAYER 1: ANIMATED BACKGROUND SYSTEM (CUSTOM SPECIFICATION) */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" id="bg-layer">
+        {/* Glow Orbs */}
+        <div className="absolute -top-20 -right-20 w-[600px] h-[600px] bg-indigo-505/20 bg-indigo-500 rounded-full blur-3xl opacity-15 animate-pulse"></div>
+        <div className="absolute top-40 -left-20 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-15 animate-pulse" style={{ animationDelay: "1s" }}></div>
+        <div className="absolute bottom-20 right-1/3 w-[500px] h-[500px] bg-purple-500 rounded-full blur-3xl opacity-10 animate-pulse" style={{ animationDelay: "2s" }}></div>
+        {/* Floating Particles generated dynamically */}
+        <div id="particles">
+          {Array.from({ length: 20 }).map((_, i) => {
+            const topVal = (Math.sin(i * 1489.17) * 50 + 50).toFixed(1);
+            const leftVal = (Math.cos(i * 9283.43) * 50 + 50).toFixed(1);
+            const speedVal = (6 + (i % 8) * 3.5).toFixed(1);
+            const delayVal = ((i % 6) * 1.2).toFixed(1);
+            return (
+              <div
+                key={i}
+                className="particle"
+                style={{
+                  top: `${topVal}%`,
+                  left: `${leftVal}%`,
+                  animation: `float ${speedVal}s linear infinite`,
+                  animationDelay: `${delayVal}s`
+                }}
+              />
+            );
+          })}
         </div>
-      </header>
-
-      {/* ALERT BANNERS */}
-      <div className="max-w-7xl mx-auto w-full px-4 md:px-8 mt-4 space-y-3" id="notification-zone">
-        
-        {successMsg && (
-          <div className="flex items-center gap-3 rounded-lg bg-zinc-900 text-white p-3.5 text-xs shadow-md animate-fadeIn border border-zinc-800">
-            <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400 shrink-0" />
-            <p className="font-medium">{successMsg}</p>
-          </div>
-        )}
-
-        {errorMsg && (
-          <div className="flex items-start gap-4 rounded-xl bg-red-50 border border-red-100 p-4 text-xs shadow-xs animate-fadeIn">
-            <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5 animate-pulse" />
-            <div className="flex-1">
-              <p className="font-semibold text-red-950 text-[13px] mb-1">Backup Vault Synchronization Interrupted</p>
-              <p className="text-red-800 text-[11px] leading-relaxed bg-white/40 border border-red-200/50 rounded-lg p-2.5 font-mono select-text" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{errorMsg}</p>
-              {(errorMsg.toLowerCase().includes("redeploy") || errorMsg.toLowerCase().includes("apps script") || errorMsg.toLowerCase().includes("non-200") || errorMsg.toLowerCase().includes("parse") || errorMsg.toLowerCase().includes("failure") || errorMsg.toLowerCase().includes("error")) && (
-                <div className="mt-3 bg-red-100/50 rounded-lg p-2.5 border border-red-200/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <p className="font-medium text-red-900 text-[11px]">Deploy Code Action Required</p>
-                    <p className="text-red-700/80 text-[10px] mt-0.5">To remove the addHeader CORS error, update your custom Google Sheets Apps Script.</p>
-                  </div>
-                  <button
-                    onClick={handleCopyCodeJs}
-                    type="button"
-                    className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border border-transparent rounded-lg transition-all duration-150 shadow-sm cursor-pointer"
-                    id="btn-copy-corrected-script"
-                  >
-                    {copiedCodeCode ? "✓ Copied!" : "📋 Copy Corrected Script"}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* 2. MAIN WORKSPACE CONTAINER */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 py-6 mb-12">
+      {/* LAYER 2: INTERFACES & SCROLLING */}
+      <div className="relative z-10 flex flex-col min-h-screen">
         
-        {/* Dynamic Inner views based on category selection */}
-        {!selectedCategory ? (
-          
-          /* VIEW A: LANDING CATEGORIES DASHBOARD */
-          <div className="space-y-8" id="dashboard-categories-view">
-
-            {/* Grid of the 5 sheets card layouts */}
-            <div>
-              <div className="flex items-center justify-between mb-4 pb-2 border-b border-zinc-200/40">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-2">
-                  <FileSpreadsheet className="h-4.5 w-4.5 text-zinc-400" />
-                  Your Active Secure Sheets
-                </h3>
-                <span className="text-[11px] text-zinc-500 font-medium bg-zinc-200/50 px-2 py-0.5 rounded">
-                  {CATEGORIES.length} Active Schemas
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="categories-grid-container">
-                {CATEGORIES.map(category => {
-                  const IconComponent = IconMap[category.icon] || Database;
-                  const recordCount = getRecordCount(category.sheetName);
-
-                  return (
-                    <div
-                      key={category.id}
-                      id={`category-card-${category.id}`}
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setSearchQuery("");
-                      }}
-                      className="group bg-white border border-zinc-200/80 p-5 rounded-xl cursor-pointer hover:border-zinc-800 transition-all duration-200 flex flex-col justify-between"
-                    >
-                      <div className="space-y-4">
-                        {/* Header card log */}
-                        <div className="flex items-center justify-between">
-                          <div className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-150 text-zinc-800 group-hover:bg-zinc-900 group-hover:text-white transition-all duration-200">
-                            <IconComponent className="h-5.5 w-5.5 stroke-[1.5]" />
-                          </div>
-                          
-                          {/* Record counter badge */}
-                          <div className="bg-zinc-50 hover:bg-zinc-100 text-zinc-650 text-[11px] font-medium px-2 py-0.5 rounded border border-zinc-200/60 transition flex items-center gap-1.5">
-                            <span className="font-mono text-zinc-900 font-bold">{recordCount}</span>
-                            <span className="text-[9px] text-zinc-400 uppercase tracking-widest">records</span>
-                          </div>
-                        </div>
-
-                        {/* Title text */}
-                        <div>
-                          <h4 className="text-sm font-bold text-zinc-900 group-hover:text-zinc-950 transition">
-                            {category.title}
-                          </h4>
-                          <p className="text-xs text-zinc-400 mt-1 lines-clamp-2 leading-relaxed">
-                            {category.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Card meta tags footer */}
-                      <div className="pt-3 mt-5 border-t border-zinc-100 flex items-center justify-between text-xs font-medium text-zinc-405 group-hover:text-zinc-800 transition">
-                        <span className="font-mono text-[9px] uppercase text-zinc-400">Sheet: {category.sheetName}</span>
-                        <span className="text-[11px] text-zinc-500 group-hover:translate-x-0.5 transition-transform duration-150">
-                          Edit Records →
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-
-          </div>
-        ) : (
-          
-          /* VIEW B: DIRECT DETAILED SHEETS RECORDS (CARDS LAYOUT) */
-          <div className="space-y-6" id="sheet-detail-records-view">
+        {/* 1. STICKY GLASS HEADER (CUSTOM SPECIFICATION 02) */}
+        <header className="bg-white/5 backdrop-blur-2xl border-b border-white/10 shadow-2xl sticky top-0 z-40" id="global-header">
+          <div className="max-w-7xl mx-auto px-4 md:px-8 py-4 flex flex-row items-center justify-between gap-4">
             
-            {/* Nav Header breadcrumb */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-zinc-200/80">
-              
-              <div className="flex items-center gap-3">
-                <button
-                  id="btn-back-breadcrumb"
-                  onClick={() => setSelectedCategory(null)}
-                  className="p-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-50 hover:text-zinc-900 hover:border-zinc-300 text-zinc-500 transition cursor-pointer"
-                  title="Back to Sheets Selector"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                </button>
-                
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider font-mono">
-                      Sheet: {selectedCategory.sheetName}
-                    </span>
-                    <span className="h-1 w-1 rounded-full bg-zinc-350" />
-                    <span className="text-[9px] font-bold uppercase py-0.5 px-1.5 rounded bg-zinc-100 text-zinc-600 border border-zinc-150/40">
-                      {isLive ? "Live Sync Active" : "Local Simulator"}
-                    </span>
-                  </div>
-                  <h2 className="text-lg font-bold text-zinc-900 mt-0.5 flex items-center gap-2">
-                    {selectedCategory.title}
-                  </h2>
-                </div>
+            {/* Logo Brand */}
+            <div className="flex items-center gap-3.5 cursor-pointer" onClick={() => setSelectedCategory(null)}>
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-2.5 rounded-2xl text-white shadow-2xl shadow-indigo-500/50 transform hover:scale-105 transition-all duration-300">
+                <ShieldCheck className="h-5.5 w-5.5 stroke-[2]" />
               </div>
-
-              {/* Central Action triggers */}
-              <div className="flex items-center gap-3 self-end md:self-auto">
-                <button
-                  id="btn-add-record-top"
-                  onClick={handleOpenAddForm}
-                  className="bg-zinc-900 text-white rounded-lg px-4.5 py-2 text-xs font-semibold hover:bg-zinc-800 transition shadow-sm flex items-center gap-1.5 cursor-pointer border border-zinc-900"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add New Record
-                </button>
+              <div>
+                <h1 className="text-lg font-black tracking-tight text-white leading-none">
+                  Vasu <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Vault</span>
+                </h1>
+                <p className="text-[10.5px] text-slate-400 font-bold tracking-wide mt-1 uppercase">
+                  Personal Archive Manager
+                </p>
               </div>
             </div>
 
-            {/* Searching Filters and Stats bar */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 bg-white border border-zinc-200 p-4 rounded-xl">
-              <div className="relative w-full md:w-96 flex-1">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-                <input
-                  id="search-records-input"
-                  type="text"
-                  placeholder={`Search details in this category...`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-4 py-1.5 text-xs bg-zinc-50/50 outline-none border border-zinc-250/60 focus:border-zinc-900 focus:bg-white rounded-lg transition duration-150"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase font-bold text-zinc-400 hover:text-zinc-700"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-
-              <div className="text-[11px] text-zinc-500 font-medium flex items-center gap-3.5">
-                <span>Total Stored: <b className="text-zinc-800">{getRecordCount(selectedCategory.sheetName)} rows</b></span>
-                {searchQuery && (
-                  <>
-                    <span className="h-3 w-px bg-zinc-250" />
-                    <span>Search Matches: <b className="text-zinc-950">{getFilteredRecords().length}</b></span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* List Loader spinner */}
-            {isLoading ? (
-              <div className="py-24 flex flex-col items-center justify-center space-y-4" id="loading-spinner-box">
-                <div className="relative flex h-8 w-8">
-                  <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-205 opacity-75"></div>
-                  <div className="relative inline-flex rounded-full h-8 w-8 bg-zinc-900 items-center justify-center">
-                    <RefreshCw className="h-4 w-4 text-white animate-spin" />
-                  </div>
-                </div>
-                <p className="text-xs font-medium text-zinc-400">Querying Sheet Rows from Database...</p>
-              </div>
-            ) : (
+            {/* Controls */}
+            <div className="flex items-center gap-3">
               
-              /* Main lists layout */
-              <div className="space-y-6">
-                {getFilteredRecords().length === 0 ? (
-                  
-                  /* Empty state card helper */
-                  <div className="border border-dashed border-zinc-200 bg-white rounded-xl py-14 px-4 text-center max-w-md mx-auto" id="no-records-card">
-                    <div className="h-10 w-10 bg-zinc-50 text-zinc-400 rounded-lg flex items-center justify-center mx-auto mb-3.5 border border-zinc-150">
-                      <Search className="h-4 w-4" />
-                    </div>
-                    <h3 className="text-xs font-bold uppercase tracking-wide text-zinc-800">
-                      {searchQuery ? "No matches found" : `Empty Sheet`}
-                    </h3>
-                    <p className="text-xs text-zinc-400 max-w-xs mx-auto mt-1 md:mt-1.5 leading-relaxed">
-                      {searchQuery ? "Check keywords or clear spelling parameters." : "Initiate your live Google Sheet database by adding your first row."}
-                    </p>
-                    <div className="mt-4">
-                      {searchQuery ? (
-                        <button
-                          onClick={() => setSearchQuery("")}
-                          className="text-[11px] bg-zinc-50 border border-zinc-150 text-zinc-700 hover:bg-zinc-100 px-3 py-1.5 rounded font-semibold transition"
-                        >
-                          Clear Query
-                        </button>
-                      ) : (
-                        <button
-                          onClick={handleOpenAddForm}
-                          className="bg-zinc-900 text-white hover:bg-zinc-850 text-[11px] font-semibold px-4 py-2 rounded-lg transition inline-flex items-center gap-1.5 mx-auto cursor-pointer"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          Add First Record Row
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  
-                  /* RENDER RESPONSIVE CARDS GRID */
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="records-grid-container">
-                    
-                    {/* Dynamic List */}
-                    {getFilteredRecords().map((record) => (
-                      <RecordItemCard
-                        key={record._rowNum || Math.random()}
-                        category={selectedCategory}
-                        record={record}
-                        onEdit={handleOpenEditForm}
-                        onDelete={handleDeleteRecord}
-                      />
-                    ))}
-
-                    {/* Interactive "Append placeholder block" inside grid */}
-                    <div 
-                      onClick={handleOpenAddForm}
-                      className="border border-dashed border-zinc-200 hover:border-zinc-400 rounded-xl p-5 flex flex-col items-center justify-center text-center cursor-pointer min-h-[200px] bg-white hover:bg-zinc-50/50 transition-all duration-150 group"
-                      id="card-append-placeholder"
-                    >
-                      <div className="p-2 bg-zinc-50 rounded-full text-zinc-400 group-hover:scale-105 transition border border-zinc-150">
-                        <Plus className="h-4.5 w-4.5" />
-                      </div>
-                      <h4 className="text-[10.5px] font-bold text-zinc-400 mt-3 font-sans uppercase tracking-wider group-hover:text-zinc-600 transition">
-                        Add entry to {selectedCategory.title}
-                      </h4>
-                      <p className="text-[11px] text-zinc-400 max-w-[170px] mt-1 leading-relaxed">
-                        Appends a new record row into the target spreadsheet.
-                      </p>
-                    </div>
-
-                  </div>
-                )}
+              {/* Date pill from theme specs */}
+              <div className="hidden md:block text-xs font-black tracking-widest uppercase text-white/80 bg-white/10 backdrop-blur-sm px-4.5 py-2.5 rounded-full border border-white/25 transition cursor-default">
+                {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
               </div>
-            )}
+
+              {/* Status Connections */}
+              {isLive ? (
+                <div 
+                  id="live-status-connected"
+                  onClick={() => setIsSetupOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-400/30 px-3 py-1.5 cursor-pointer hover:bg-emerald-500/20 transition duration-150 text-[10px] font-black uppercase text-emerald-300"
+                  title="Real-time syncing database connection: Active"
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                  </span>
+                  LIVE CLOUD
+                </div>
+              ) : (
+                <div 
+                  id="live-status-simulated"
+                  onClick={() => setIsSetupOpen(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 border border-amber-400/30 px-3 py-1.5 cursor-pointer hover:bg-amber-500/20 transition duration-150 text-[10px] font-black uppercase text-amber-300"
+                  title="Simulating Google Sheets locally: Sandbox Mode"
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span className="h-2 w-2 rounded-full bg-amber-400"></span>
+                  </span>
+                  SANDBOX
+                </div>
+              )}
+
+              {/* Settings toggle */}
+              <button
+                id="btn-settings-toggle"
+                onClick={() => setIsSetupOpen(true)}
+                className="p-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white hover:border-white/20 transition-all duration-200 cursor-pointer"
+                title="Connect Cloud Settings"
+              >
+                <Settings className="h-4.5 w-4.5" />
+              </button>
+              
+              {/* Refresh sync */}
+              <button
+                id="btn-manual-sync"
+                onClick={() => loadWorkspaceData()}
+                className="p-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white hover:border-white/20 transition-all duration-200 cursor-pointer"
+                title="Force refresh sheet database"
+              >
+                <RefreshCw className={`h-4.5 w-4.5 ${isLoading ? "animate-spin text-white" : ""}`} />
+              </button>
+            </div>
           </div>
-        )}
-      </main>
+        </header>
 
-      {/* 3. SLIDE-OUT PANEL FOR GOOGLE CONFIG APPS SCRIPT GUIDE */}
-      {isSetupOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden" id="setup-drawer">
-          {/* Backdrop overlay */}
-          <div 
-            className="absolute inset-0 bg-zinc-900/40 backdrop-blur-[2px] transition-opacity" 
-            onClick={() => setIsSetupOpen(false)}
-          />
+        {/* 2. SUCCESS/ERROR GLOWING NOTIFICATIONS (07 TOAST NOTIFICATIONS RECIPES) */}
+        <div className="max-w-7xl mx-auto w-full px-4 md:px-8 mt-6 space-y-4 relative z-40" id="notification-zone">
+          
+          {successMsg && (
+            <div className="flex items-center gap-4 px-6 py-4.5 rounded-2xl shadow-2xl border backdrop-blur-md bg-emerald-500/90 border-emerald-400 text-white animate-fade-in-up" id="success-toast-banner">
+              <div className="p-2 rounded-full bg-white/20 shrink-0">
+                <CheckCircle2 className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-extrabold text-sm tracking-wide">Submission Success</h4>
+                <p className="text-xs opacity-90 mt-0.5">{successMsg}</p>
+              </div>
+              <button 
+                onClick={() => setSuccessMsg("")} 
+                className="p-1 hover:bg-white/10 rounded-full transition-colors shrink-0 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
-          <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
-            <div className="w-screen max-w-md bg-white border-l border-zinc-205 flex flex-col justify-between shadow-xl animate-slideOver">
-              
-              {/* Drawer Scroll body */}
-              <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6">
-                
-                {/* Drawer Header */}
-                <div className="flex items-start justify-between pb-4 border-b border-zinc-100">
-                  <div>
-                    <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                      <Database className="h-4.5 w-4.5 text-zinc-800" />
-                      Google Sheets Integration
-                    </h3>
-                    <p className="text-[11px] text-zinc-400 mt-1 leading-normal">
-                      Connect your spreadsheet to enjoy real persistent edits.
-                    </p>
+          {errorMsg && (
+            <div className="flex items-start gap-4 p-5 rounded-2xl shadow-2xl border backdrop-blur-md bg-red-500/95 border-red-400 text-white animate-fade-in-up md:p-6" id="error-toast-banner">
+              <div className="p-2 rounded-full bg-white/20 shrink-0 mt-0.5">
+                <AlertCircle className="h-5 w-5 text-white animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-extrabold text-sm tracking-wide">Backup Sync Interrupted</h4>
+                <p className="text-xs opacity-90 mt-1 bg-black/20 rounded-xl p-3 border border-white/5 font-mono select-text" style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                  {errorMsg}
+                </p>
+
+                {(errorMsg.toLowerCase().includes("redeploy") || errorMsg.toLowerCase().includes("apps script") || errorMsg.toLowerCase().includes("non-200") || errorMsg.toLowerCase().includes("parse") || errorMsg.toLowerCase().includes("failure") || errorMsg.toLowerCase().includes("error")) && (
+                  <div className="mt-4 bg-white/10 rounded-xl p-3 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <p className="font-black text-xs text-white">CORS / Integration Update Required</p>
+                      <p className="text-[10.5px] text-slate-300 mt-0.5">Paste our latest script build directly into your Apps Script editor.</p>
+                    </div>
+                    <button
+                      onClick={handleCopyCodeJs}
+                      type="button"
+                      className="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-black bg-gradient-to-r from-amber-500 to-orange-600 border border-amber-400/30 rounded-xl transition-all hover:scale-[1.02] shadow-lg shadow-amber-500/20 cursor-pointer"
+                      id="btn-copy-corrected-script"
+                    >
+                      {copiedCodeCode ? "✓ Copied!" : "📋 Copy corrected code.js"}
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => setIsSetupOpen(false)}
-                    className="p-1 rounded-md border border-zinc-100 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-55 transition-all duration-150 cursor-pointer"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => setErrorMsg("")}
+                className="p-1 hover:bg-white/10 rounded-full transition-colors shrink-0 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* 3. MAIN WORKSPACE CONTENT */}
+        <main className="flex-1 max-w-7xl mx-auto w-full px-4 md:px-8 py-6 mb-12 relative z-30">
+          
+          {!selectedCategory ? (
+            
+            /* VIEW A: LANDING CATEGORIES GRID (BENTO GLASS CARD STYLE) */
+            <div className="space-y-8 animate-fade-in-up" id="dashboard-categories-view">
+
+              {/* Custom Bento Panel Title with color highlights */}
+              <div>
+                <div className="flex items-center justify-between mb-5 pb-3 border-b border-white/10">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2.5">
+                    <FileSpreadsheet className="h-4.5 w-4.5 text-slate-500" />
+                    Active Database Vault Schemas
+                  </h3>
+                  <span className="text-[10px] font-black uppercase text-white/80 bg-white/10 backdrop-blur-sm px-3.5 py-1.5 rounded-full border border-white/25">
+                    {CATEGORIES.length} Active Schemas
+                  </span>
                 </div>
 
-                {/* API Input Form */}
-                <form onSubmit={handleSaveApiUrl} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">
-                      Google Apps Script Web-App URL
-                    </label>
-                    <p className="text-[10px] text-zinc-400 leading-relaxed">
-                      Enter the deployed Google Apps Script URL. Leave blank to run in Browser Simulator sandbox.
-                    </p>
-                    <div className="mt-2 text-[10px] font-semibold text-zinc-700 bg-zinc-50 p-2 rounded border border-zinc-150/80">
-                      💡 Active Mode: <span className="text-zinc-900">{isLive ? "Live Sync Server" : "Browser Simulation"}</span>
-                    </div>
-                    <textarea
-                      id="input-setup-api-url"
-                      rows={3}
-                      placeholder="https://script.google.com/macros/s/.../exec"
-                      value={inputUrl}
-                      onChange={(e) => setInputUrl(e.target.value)}
-                      className="w-full text-xs font-mono border border-zinc-200 focus:border-zinc-900 focus:ring-0 rounded-lg p-2.5 outline-none bg-zinc-50/50 focus:bg-white transition"
-                    />
-                  </div>
+                {/* Categories Grid layout with beautiful card animations */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="categories-grid-container">
+                  {CATEGORIES.map((category, index) => {
+                    const IconComponent = IconMap[category.icon] || Database;
+                    const recordCount = getRecordCount(category.sheetName);
 
-                  <div className="flex gap-2 text-xs">
-                    <button
-                      id="btn-save-setup-url"
-                      type="submit"
-                      className="flex-1 rounded-lg bg-zinc-900 text-white py-2 px-3 hover:bg-zinc-850 transition font-semibold cursor-pointer border border-zinc-900 text-xs"
-                    >
-                      Authenticate URL
-                    </button>
-                    {getActiveScriptUrl() && (
-                      <button
-                        id="btn-clear-setup"
-                        type="button"
+                    return (
+                      <div
+                        key={category.id}
+                        id={`category-card-${category.id}`}
                         onClick={() => {
-                          setInputUrl("");
-                          setActiveScriptUrl("");
-                          showSuccessAlert("URL cleared from local configurations.");
-                          setIsSetupOpen(false);
-                          loadWorkspaceData();
+                          setSelectedCategory(category);
+                          setSearchQuery("");
                         }}
-                        className="rounded-lg border border-zinc-200 text-zinc-650 hover:bg-zinc-50 px-3 cursor-pointer transition font-medium"
+                        style={{
+                          animationDelay: `${index * 80}ms`,
+                          animation: 'fadeInUp 0.6s ease-out forwards',
+                          opacity: 0
+                        }}
+                        className="group relative overflow-hidden bg-white/5 backdrop-blur-2xl border border-white/10 p-6 rounded-3xl cursor-pointer hover:border-white/20 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 hover:-translate-y-1.5 hover:scale-[1.015] flex flex-col justify-between"
                       >
-                        Reset Local
+                        {/* High fidelity top stripe gradient highlight (04 Info Card recipe) */}
+                        <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${getCategoryStripeClass(category.id)}`} />
+
+                        <div className="space-y-5">
+                          {/* Top row */}
+                          <div className="flex items-center justify-between">
+                            <div className="p-3 rounded-2xl bg-white/5 border border-white/5 text-white group-hover:bg-gradient-to-br transition-all duration-300 group-hover:from-indigo-600 group-hover:to-purple-600 group-hover:border-transparent group-hover:shadow-lg group-hover:shadow-indigo-500/30">
+                              <IconComponent className="h-5.5 w-5.5 stroke-[2]" />
+                            </div>
+                            
+                            {/* Record Count badge */}
+                            <div className="bg-white/5 text-slate-300 text-xs font-black px-3 py-1 rounded-xl border border-white/10 hover:bg-white/10 transition flex items-center gap-1.5">
+                              <span className="font-mono text-white font-black text-sm">{recordCount}</span>
+                              <span className="text-[9px] text-slate-400 uppercase tracking-widest leading-none">records</span>
+                            </div>
+                          </div>
+
+                          {/* Titles */}
+                          <div>
+                            <h4 className={`text-base font-black text-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r ${getCategoryTextColors(category.id)} transition duration-300`}>
+                              {category.title}
+                            </h4>
+                            <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                              {category.description}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Footer details */}
+                        <div className="pt-4 mt-6 border-t border-white/5 flex items-center justify-between text-xs font-bold text-slate-500 group-hover:text-slate-350 transition duration-300">
+                          <span className="font-mono text-[9px] uppercase tracking-wider text-slate-500">Sheet: {category.sheetName}</span>
+                          <span className="text-[11px] text-indigo-400 group-hover:text-indigo-300 group-hover:translate-x-1 transition-all duration-200 flex items-center gap-1">
+                            Browse Rows &rarr;
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+
+
+            </div>
+          ) : (
+            
+            /* VIEW B: CATEGORY DETAILS TABLE & RECORDS PANELS */
+            <div className="space-y-6 animate-fade-in-up" id="sheet-detail-records-view">
+              
+              {/* breadcrumb row */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 pb-5 border-b border-white/10">
+                <div className="flex items-center gap-3.5">
+                  <button
+                    id="btn-back-breadcrumb"
+                    onClick={() => setSelectedCategory(null)}
+                    className="p-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 hover:text-white hover:border-white/20 text-slate-4 w-11 h-11 flex items-center justify-center transition cursor-pointer"
+                    title="Back to Vault Dashboard"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </button>
+                  
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-450 font-black uppercase tracking-widest font-mono">
+                        Vault: {selectedCategory.sheetName}
+                      </span>
+                      <span className="h-1.5 w-1.5 rounded-full bg-slate-600" />
+                      <span className={`text-[9px] font-black uppercase py-0.5 px-2 rounded-lg bg-indigo-500/20 text-indigo-300 border border-indigo-400/30`}>
+                        {isLive ? "Sync Active" : "Local Sandbox"}
+                      </span>
+                    </div>
+                    <h2 className="text-2xl font-black text-white mt-1.5 flex items-center gap-2.5">
+                      <span className="w-1.5 h-6 bg-gradient-to-b from-indigo-400 to-purple-500 rounded-full" />
+                      {selectedCategory.title}
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Recipe 06: Action Add-New-Record Buttons */}
+                <div className="flex items-center gap-3 self-end md:self-auto">
+                  <button
+                    id="btn-add-record-top"
+                    onClick={handleOpenAddForm}
+                    className="group relative overflow-hidden rounded-2xl shadow-xl transition-all duration-300 hover:scale-[1.02] border border-white/20 cursor-pointer"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 transition-all duration-300 group-hover:scale-110" />
+                    <div className="relative flex items-center justify-center gap-2 px-6 py-3.5 text-white font-black text-xs tracking-wider uppercase">
+                      <Plus className="h-4.5 w-4.5" />
+                      Add New Record
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Glowing Search Bar + total stats panels (Recipe 03) */}
+              <div className="flex flex-col md:flex-row items-center justify-between gap-5 bg-white/5 border border-white/10 p-5 rounded-3xl backdrop-blur-2xl">
+                
+                {/* Search query container */}
+                <div className="relative group w-full md:w-96 flex-1">
+                  <div className="absolute -inset-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-20 group-focus-within:opacity-40 transition duration-500 animate-pulse"></div>
+                  <div className="relative flex items-center p-1 bg-slate-950/20 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input
+                      id="search-records-input"
+                      type="text"
+                      placeholder={`Search in ${selectedCategory.title}...`}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-12 py-3 bg-transparent text-sm font-bold text-white placeholder:text-white/30 outline-none"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] uppercase font-black text-slate-350 hover:text-white hover:bg-white/10 px-2 py-1.5 rounded-lg transition"
+                      >
+                        Clear
                       </button>
                     )}
                   </div>
-                </form>
-
-                {/* Deployment Guide Bullet Points */}
-                <div className="space-y-4 pt-4.5 border-t border-zinc-100">
-                  <h4 className="text-[10px] font-bold text-zinc-405 uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-zinc-900" />
-                    Simple Deployment Guide
-                  </h4>
-
-                  <ol className="space-y-3 test-xs text-zinc-500 text-[11px] leading-relaxed">
-                    <li className="space-y-0.5">
-                      <div className="font-semibold text-zinc-800">1. Prepare your Spreadsheet</div>
-                      <p className="text-[10.5px] text-zinc-400">
-                        Create a blank Google Spreadsheet in your account.
-                      </p>
-                    </li>
-                    <li className="space-y-0.5">
-                      <div className="font-semibold text-zinc-800">2. Open Apps Script Editor</div>
-                      <p className="text-[10.5px] text-zinc-400">
-                        Select <b>Extensions &gt; Apps Script</b> in your spreadsheet tab.
-                      </p>
-                    </li>
-                    <li className="space-y-0.5">
-                      <div className="font-semibold text-zinc-800">3. Copy and Paste backend program</div>
-                      <p className="text-[10.5px] text-zinc-400">
-                        Copy the entire contents of `code.js` from this project workspace, paste it into Google Apps Script file, and save.
-                      </p>
-                    </li>
-                    <li className="space-y-0.5">
-                      <div className="font-semibold text-zinc-800">4. Publish Web App</div>
-                      <p className="text-[10.5px] text-zinc-400">
-                        Deploy is top-right. Set "Execute as" to <b>Me</b>, and "Who has access" to <b className="text-zinc-800 font-bold">Anyone</b> (CORS validation).
-                      </p>
-                    </li>
-                    <li className="space-y-0.5">
-                      <div className="font-semibold text-zinc-800">5. Authorize</div>
-                      <p className="text-[10.5px] text-zinc-400">
-                        Allow security permissions and copy the deployed URL. Paste above!
-                      </p>
-                    </li>
-                  </ol>
                 </div>
 
-                <div className="space-y-2 pt-4 border-t border-zinc-100">
-                  <h4 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                    Dynamic Creation
-                  </h4>
-                  <p className="text-[10.5px] text-zinc-400 leading-relaxed">
-                    Our Apps Script dynamically formats all tabs: <code className="bg-zinc-50 text-zinc-800 px-1 py-0.5 tracking-tight font-mono text-[9px] border rounded">PersonalData</code>, <code className="bg-zinc-50 text-zinc-800 px-1 py-0.5 tracking-tight font-mono text-[9px] border rounded">FinancialData</code>, etc. You don't have to prepare anything yourself!
-                  </p>
+                <div className="text-[11px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-4 shrink-0">
+                  <span>Total row logs: <b className="text-white font-mono text-sm">{getRecordCount(selectedCategory.sheetName)}</b></span>
+                  {searchQuery && (
+                    <>
+                      <span className="h-4 w-px bg-white/15" />
+                      <span>Search Matches: <b className="text-indigo-400 font-mono text-sm">{getFilteredRecords().length}</b></span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Database Query Progress Spinner */}
+              {isLoading ? (
+                <div className="py-24 flex flex-col items-center justify-center space-y-4" id="loading-spinner-box">
+                  <div className="relative flex h-12 w-12 items-center justify-center">
+                    <div className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-500/20 opacity-75"></div>
+                    <div className="relative inline-flex rounded-full h-12 w-12 bg-gradient-to-br from-indigo-500 to-purple-600 items-center justify-center shadow-lg shadow-indigo-500/50">
+                      <RefreshCw className="h-5 w-5 text-white animate-spin" />
+                    </div>
+                  </div>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Loading spreadsheet data rows...</p>
+                </div>
+              ) : (
+                
+                /* Main rows lists grid */
+                <div className="space-y-6">
+                  {getFilteredRecords().length === 0 ? (
+                    
+                    /* Empty State Recipe */
+                    <div className="border-2 border-dashed border-white/10 bg-white/5 rounded-3xl py-14 px-6 text-center max-w-md mx-auto relative overflow-hidden backdrop-blur-md" id="no-records-card">
+                      <div className="h-12 w-12 bg-white/5 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                        <Search className="h-5 w-5" />
+                      </div>
+                      <h3 className="text-xs font-black uppercase tracking-widest text-white">
+                        {searchQuery ? "No matches found" : `Empty Vault Category`}
+                      </h3>
+                      <p className="text-xs text-slate-400 max-w-xs mx-auto mt-2 leading-relaxed font-medium">
+                        {searchQuery ? "Check spelling keywords or clear search filter inputs." : "Initiate your persistent cloud database by adding your first row."}
+                      </p>
+                      <div className="mt-5">
+                        {searchQuery ? (
+                          <button
+                            onClick={() => setSearchQuery("")}
+                            className="text-xs font-black uppercase tracking-wider bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 px-4 py-2 rounded-xl transition"
+                          >
+                            Clear Query
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleOpenAddForm}
+                            className="inline-flex items-center gap-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 font-black text-xs uppercase tracking-wider px-5 py-3 rounded-2xl transition cursor-pointer"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Add First Record Row
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    
+                    /* STAGGERED ANIMATIONS RENDER GRID */
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="records-grid-container">
+                      
+                      {/* Dynamic lists mapping */}
+                      {getFilteredRecords().map((record, index) => (
+                        <div 
+                          key={record._rowNum || Math.random()}
+                          style={{
+                            animationDelay: `${index * 60}ms`,
+                            animation: 'fadeInUp 0.6s ease-out forwards',
+                            opacity: 0
+                          }}
+                        >
+                          <RecordItemCard
+                            category={selectedCategory}
+                            record={record}
+                            onEdit={handleOpenEditForm}
+                            onDelete={handleDeleteRecord}
+                          />
+                        </div>
+                      ))}
+
+                      {/* Interactive block append trigger (05 Cards Grid Recipe) */}
+                      <div 
+                        onClick={handleOpenAddForm}
+                        className="border-2 border-dashed border-white/10 hover:border-indigo-400/55 hover:bg-white/10 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[220px] bg-white/5 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 group relative overflow-hidden backdrop-blur-md"
+                        id="card-append-placeholder"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-indigo-500/5 opacity-0 group-hover:opacity-100 transition duration-350 pointer-events-none" />
+                        <div className="p-3 bg-white/5 rounded-full text-slate-400 group-hover:scale-110 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300 border border-white/5">
+                          <Plus className="h-5 w-5" />
+                        </div>
+                        <h4 className="text-[11px] font-black text-slate-400 mt-4 uppercase tracking-widest group-hover:text-white transition duration-200">
+                          Add record row
+                        </h4>
+                        <p className="text-xs text-slate-500 max-w-[200px] mt-1.5 leading-relaxed font-semibold">
+                          Appends a new secure data row strictly into Category "{selectedCategory.title}"
+                        </p>
+                      </div>
+
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+
+        {/* 4. SLIDE-OUT METADATA CONFIG DRAWER */}
+        {isSetupOpen && (
+          <div className="fixed inset-0 z-50 overflow-hidden" id="setup-drawer">
+            {/* Backdrop overlay */}
+            <div 
+              className="absolute inset-0 bg-slate-950/85 backdrop-blur-md transition-opacity" 
+              onClick={() => setIsSetupOpen(false)}
+            />
+
+            <div className="absolute inset-y-0 right-0 max-w-full flex pl-10">
+              <div className="w-screen max-w-md bg-slate-950 border-l border-white/10 flex flex-col justify-between shadow-2xl animate-slideOver text-white font-sans">
+                
+                {/* Scroll body */}
+                <div className="flex-1 overflow-y-auto px-6 py-7 space-y-6">
+                  
+                  {/* Header info */}
+                  <div className="flex items-start justify-between pb-4.5 border-b border-white/5">
+                    <div>
+                      <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                        <Database className="h-4.5 w-4.5 text-indigo-400" />
+                        Google Sheets Cloud Setup
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-1.5 leading-normal">
+                        Connect your live spreadsheet to secure persistent cloud data sync.
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setIsSetupOpen(false)}
+                      className="p-1.5 rounded-xl border border-white/5 text-slate-400 hover:text-white hover:bg-white/5 transition cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* API URL submission for Sheets */}
+                  <form onSubmit={handleSaveApiUrl} className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                        Google Apps Script Web-App URL
+                      </label>
+                      <p className="text-[10.5px] text-slate-500 leading-relaxed font-semibold">
+                        Deploy your script with CORS "Anyone" settings from spreadsheet editor, and copy the web address here. Keep blank to default back into safe offline simulator mode.
+                      </p>
+                      
+                      <div className="mt-2 text-xs font-black text-white bg-white/5 p-3.5 rounded-2xl border border-white/5">
+                        💡 Active storage: <span className="text-indigo-400">{isLive ? "Live Cloud Sync Server" : "Local Browser Simulation"}</span>
+                      </div>
+                      
+                      <textarea
+                        id="input-setup-api-url"
+                        rows={3}
+                        placeholder="https://script.google.com/macros/s/.../exec"
+                        value={inputUrl}
+                        onChange={(e) => setInputUrl(e.target.value)}
+                        className="w-full text-xs font-mono border border-white/10 bg-white/5 focus:bg-white/10 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-2xl p-3.5 outline-none font-bold text-white transition leading-normal mt-2"
+                      />
+                    </div>
+
+                    <div className="flex gap-3 text-xs pt-2">
+                      <button
+                        id="btn-save-setup-url"
+                        type="submit"
+                        className="flex-1 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 hover:scale-[1.02] active:scale-[0.99] transition font-black tracking-wider uppercase cursor-pointer border border-white/10 text-xs shadow-lg shadow-indigo-600/20"
+                      >
+                        Authenticate Connection
+                      </button>
+                      {getActiveScriptUrl() && (
+                        <button
+                          id="btn-clear-setup"
+                          type="button"
+                          onClick={() => {
+                            setInputUrl("");
+                            setActiveScriptUrl("");
+                            showSuccessAlert("URL cleared from local configurations.");
+                            setIsSetupOpen(false);
+                            loadWorkspaceData();
+                          }}
+                          className="rounded-2xl border border-white/10 text-slate-300 hover:bg-white/10 px-4 cursor-pointer transition font-black text-xs uppercase"
+                        >
+                          Clear Sync
+                        </button>
+                      )}
+                    </div>
+                  </form>
+
+                  {/* Guide list steps */}
+                  <div className="space-y-4 pt-5.5 border-t border-white/5">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
+                      5-Step Deployment Guide
+                    </h4>
+
+                    <ol className="space-y-3.5 text-slate-400 text-xs leading-relaxed font-semibold">
+                      <li className="space-y-1">
+                        <div className="font-black text-white">1. Prepare your Spreadsheet</div>
+                        <p className="text-[10.5px] text-slate-500">
+                          Create a blank Google Spreadsheet in your account.
+                        </p>
+                      </li>
+                      <li className="space-y-1">
+                        <div className="font-black text-white">2. Open Apps Script Editor</div>
+                        <p className="text-[10.5px] text-slate-500">
+                          Select <b>Extensions &gt; Apps Script</b> in your spreadsheet tab.
+                        </p>
+                      </li>
+                      <li className="space-y-1">
+                        <div className="font-black text-white">3. Copy and Paste backend program</div>
+                        <p className="text-[10.5px] text-slate-500">
+                          Copy the entire contents of `code.js` from this project workspace, paste it into Google Apps Script file, and save.
+                        </p>
+                      </li>
+                      <li className="space-y-1">
+                        <div className="font-black text-white">4. Publish Web App</div>
+                        <p className="text-[10.5px] text-slate-500 font-bold leading-normal">
+                          Deploy is top-right. Set "Execute as" to <b>Me</b>, and "Who has access" to <b className="text-white font-extrabold border-b border-indigo-400">Anyone</b> (removes CORS CORS policy validation errors).
+                        </p>
+                      </li>
+                      <li className="space-y-1">
+                        <div className="font-black text-white">5. Authorize</div>
+                        <p className="text-[10.5px] text-slate-500">
+                          Allow permissions, copy the deployed URL value and paste into the box above to sync your vault!
+                        </p>
+                      </li>
+                    </ol>
+                  </div>
+
+                  <div className="space-y-2 pt-4 border-t border-white/5">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      Dynamic Sheets Generation
+                    </h4>
+                    <p className="text-[10.5px] text-slate-500 leading-relaxed font-semibold">
+                      Our script dynamically formats and organizes all sheet tabs: <code className="bg-white/5 text-slate-300 px-1.5 py-0.5 font-mono text-[9.5px] border border-white/5 rounded-lg font-bold">PersonalData</code>, <code className="bg-white/5 text-slate-300 px-1.5 py-0.5 font-mono text-[9.5px] border border-white/5 rounded-lg font-bold">FinancialData</code>, etc. You don't have to prepare anything yourself!
+                    </p>
+                  </div>
+
+                </div>
+
+                {/* Footer details */}
+                <div className="bg-white/5 border-t border-white/10 px-6 py-4 flex items-center justify-between text-xs font-bold text-slate-400">
+                  <span>Vault Cloud Control</span>
+                  <button
+                    onClick={() => setIsSetupOpen(false)}
+                    className="bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black px-4 py-2 rounded-xl cursor-pointer transition text-xs"
+                  >
+                    Done
+                  </button>
                 </div>
 
               </div>
-
-              {/* Drawer Footer actions */}
-              <div className="bg-zinc-50 border-t border-zinc-100 px-5 py-3 flex items-center justify-between text-xs">
-                <span className="text-zinc-400 font-medium font-sans">Setup Instructions</span>
-                <button
-                  onClick={() => setIsSetupOpen(false)}
-                  className="bg-white border border-zinc-200 hover:bg-zinc-100 text-zinc-700 font-semibold py-1 px-3 rounded-md cursor-pointer transition text-xs"
-                >
-                  Done
-                </button>
-              </div>
-
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 4. MAIN MODIFIED DIALOG / FORM */}
-      {selectedCategory && (
-        <CardFormModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          category={selectedCategory}
-          initialData={activeEditingRecord}
-          onSave={handleSaveRecord}
-          isSaving={isSaving}
-        />
-      )}
+        {/* 5. FORM MODAL OVERLAYS */}
+        {selectedCategory && (
+          <CardFormModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            category={selectedCategory}
+            initialData={activeEditingRecord}
+            onSave={handleSaveRecord}
+            isSaving={isSaving}
+          />
+        )}
 
-
+      </div>
     </div>
   );
 }
