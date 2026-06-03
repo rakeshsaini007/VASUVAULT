@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  Copy, Check, Eye, EyeOff, Edit2, Trash2, 
+  Copy, Check, Eye, EyeOff, Edit2, Trash2, X,
   User, CreditCard, Landmark, Mail, Lock, FileText, Phone, Calendar
 } from "lucide-react";
 import { CategorySchema, formatExpiryToMMYY, formatCardNumber } from "../types";
@@ -41,13 +41,14 @@ export default function RecordItemCard({
       case "financial": return "from-emerald-400 to-teal-600";
       case "card": return "from-cyan-400 to-blue-500";
       case "media": return "from-amber-400 to-orange-600";
+      case "documents": return "from-purple-400 to-fuchsia-600";
       default: return "from-rose-400 to-pink-600";
     }
   };
 
   // Render custom layout per category
   if (category.id === "personal") {
-    const avatarUrl = record.Photo || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(record.Name || "User")}`;
+    const avatarUrl = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(record.Name || "User")}`;
     
     return (
       <div 
@@ -83,6 +84,21 @@ export default function RecordItemCard({
           {/* Quick Info Block */}
           <div className="mt-5 space-y-3.5">
             {/* Identity Papers */}
+            {record.EpicNumber && (
+              <div className="flex items-center justify-between text-xs bg-white/5 rounded-xl p-3 border border-white/5 hover:bg-white/10 transition">
+                <span className="text-slate-400 font-bold">EPIC Number:</span>
+                <span className="font-mono text-white flex items-center gap-2 uppercase font-black">
+                  {String(record.EpicNumber).toUpperCase()}
+                  <button 
+                    onClick={() => triggerCopy(String(record.EpicNumber).toUpperCase(), "epic")}
+                    className="p-1 hover:bg-white/15 rounded-lg transition text-slate-400 lg:hover:text-white"
+                  >
+                    {copiedKey === "epic" ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </span>
+              </div>
+            )}
+
             {record.AdharNumber && (
               <div className="flex items-center justify-between text-xs bg-white/5 rounded-xl p-3 border border-white/5 hover:bg-white/10 transition">
                 <span className="text-slate-400 font-bold">Aadhaar:</span>
@@ -102,9 +118,9 @@ export default function RecordItemCard({
               <div className="flex items-center justify-between text-xs bg-white/5 rounded-xl p-3 border border-white/5 hover:bg-white/10 transition">
                 <span className="text-slate-400 font-bold">PAN:</span>
                 <span className="font-mono text-white flex items-center gap-2 uppercase font-black">
-                  {record.PanNumber}
+                  {String(record.PanNumber).toUpperCase()}
                   <button 
-                    onClick={() => triggerCopy(record.PanNumber, "pan")}
+                    onClick={() => triggerCopy(String(record.PanNumber).toUpperCase(), "pan")}
                     className="p-1 hover:bg-white/15 rounded-lg transition text-slate-400 lg:hover:text-white"
                   >
                     {copiedKey === "pan" ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -521,6 +537,192 @@ export default function RecordItemCard({
             Delete
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (category.id === "documents") {
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const isImage = record.FileAttachment && (record.FileAttachment.startsWith("data:image/") || record.FileAttachment.startsWith("data:image/svg"));
+    const isPdf = record.FileAttachment && record.FileAttachment.startsWith("data:application/pdf");
+
+    const formatBytes = (bytes: number) => {
+      if (bytes === 0) return "0 Bytes";
+      const k = 1024;
+      const sizes = ["Bytes", "KB", "MB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+    };
+
+    return (
+      <div 
+        id={`record-documents-${rowNum}`}
+        className="relative overflow-hidden bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 hover:shadow-2xl hover:shadow-purple-500/10 hover:border-white/20 transition-all duration-300 flex flex-col justify-between group"
+      >
+        {/* Visual Stripe */}
+        <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${getCategoryStripeClass(category.id)}`} />
+
+        <div>
+          {/* Header */}
+          <div className="flex items-start justify-between pb-3.5 border-b border-white/5">
+            <div>
+              <div className="flex items-center gap-1.5">
+                <FileText className="h-4 w-4 text-purple-400" />
+                <span className="text-xs uppercase tracking-wider font-extrabold text-slate-400">
+                  {record.DocType || "Document"}
+                </span>
+              </div>
+              <h4 className="text-base font-black text-white mt-1.5 truncate max-w-[190px]" title={record.Title}>
+                {record.Title || "Untitled Document"}
+              </h4>
+            </div>
+            
+            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-400/30">
+              Vault Sealed
+            </span>
+          </div>
+
+          {/* Doc ID Number */}
+          {record.DocNumber && (
+            <div className="mt-4 flex items-center justify-between text-xs bg-white/5 rounded-xl p-3 border border-white/5">
+              <span className="text-slate-400 font-bold">Doc ID / Reference:</span>
+              <span className="font-mono text-white flex items-center gap-2">
+                <span className="font-bold">{record.DocNumber}</span>
+                <button 
+                  onClick={() => triggerCopy(record.DocNumber, "docNum")}
+                  className="p-1 hover:bg-white/15 rounded-lg transition text-slate-400 lg:hover:text-white"
+                >
+                  {copiedKey === "docNum" ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
+              </span>
+            </div>
+          )}
+
+          {/* PDF or Image file preview */}
+          {record.FileAttachment && (
+            <div className="mt-4">
+              {isImage ? (
+                <div 
+                  onClick={() => setIsPreviewOpen(true)}
+                  className="relative group/preview overflow-hidden rounded-2xl border border-white/5 bg-slate-950/50 h-36 flex items-center justify-center transition hover:border-purple-500/30 cursor-pointer"
+                >
+                  <img 
+                    src={record.FileAttachment} 
+                    alt={record.Title} 
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-contain p-2 transition duration-500 group-hover/preview:scale-[1.03]"
+                  />
+                  <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover/preview:opacity-100 flex items-center justify-center transition duration-300">
+                    <span className="px-3.5 py-1.5 rounded-xl bg-purple-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-purple-500/30">
+                      <Eye className="h-3.5 w-3.5" />
+                      View Full Document
+                    </span>
+                  </div>
+                </div>
+              ) : isPdf ? (
+                <div 
+                  onClick={() => setIsPreviewOpen(true)}
+                  className="cursor-pointer border border-white/5 bg-purple-500/5 hover:bg-purple-500/10 hover:border-purple-500/20 rounded-2xl p-4 flex items-center gap-3.5 transition group/pdf"
+                >
+                  <div className="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/20 text-rose-300">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 min-w-0 font-sans">
+                    <p className="text-xs font-black text-slate-200">PDF Document</p>
+                    <p className="text-[10px] text-purple-400 font-bold mt-1 group-hover/pdf:text-purple-300 transition">Click to Open Secure PDF</p>
+                  </div>
+                  <div className="p-1 rounded-lg bg-white/5 text-slate-400 group-hover/pdf:text-white transition">
+                    <Eye className="h-4 w-4" />
+                  </div>
+                </div>
+              ) : (
+                <div className="border border-white/5 bg-white/5 rounded-2xl p-4 flex items-center gap-3 text-xs text-slate-400 font-mono">
+                  <FileText className="h-5 w-5 text-purple-400 shrink-0" />
+                  <span className="truncate">Data URL Length: {formatBytes(record.FileAttachment.length)}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer controls */}
+        <div className="flex items-center justify-end gap-3 pt-4 mt-6 border-t border-white/5 text-xs text-slate-300">
+          <button
+            onClick={() => onEdit(record)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold transition duration-200 cursor-pointer border border-white/5"
+          >
+            <Edit2 className="h-3.5 w-3.5 text-purple-400" />
+            Edit
+          </button>
+          <button
+            onClick={() => onDelete(rowNum)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/25 text-red-300 font-bold transition duration-200 cursor-pointer border border-red-500/10"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </button>
+        </div>
+
+        {/* Lightbox Modal */}
+        {isPreviewOpen && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-xl transition duration-300">
+            {/* Overlay click to exit */}
+            <div className="absolute inset-0 cursor-zoom-out" onClick={() => setIsPreviewOpen(false)} />
+            
+            <div className="relative w-full max-w-4xl bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-black uppercase text-purple-400 tracking-wider">
+                    {record.DocType || "Digital Locker Document"}
+                  </span>
+                  <h4 className="text-base font-black text-white mt-1">
+                    {record.Title || "Attached Document"}
+                  </h4>
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setIsPreviewOpen(false)}
+                  className="p-2 bg-white/5 hover:bg-white/10 rounded-full border border-white/10 text-slate-400 hover:text-white transition cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Action Panel */}
+              <div className="px-6 py-3.5 bg-slate-950/40 border-b border-white/5 flex flex-wrap gap-4 items-center justify-between text-xs">
+                <div className="text-slate-400 font-mono">
+                  {record.DocNumber ? `Reference: ${record.DocNumber}` : "Vault Sealed Digital Scan"}
+                </div>
+                <a 
+                  href={record.FileAttachment} 
+                  download={record.Title || "document"} 
+                  className="px-4 py-2 bg-purple-650 hover:bg-purple-600 font-black text-white rounded-xl shadow-lg shadow-purple-500/20 transition cursor-pointer flex items-center gap-1.5"
+                >
+                  Download File
+                </a>
+              </div>
+
+              {/* Viewer Area */}
+              <div className="flex-1 bg-slate-950/80 p-6 flex items-center justify-center overflow-auto min-h-[50vh]">
+                {isPdf ? (
+                  <iframe 
+                    src={record.FileAttachment} 
+                    className="w-full h-[60vh] rounded-2xl border border-white/10 bg-white" 
+                    title={record.Title}
+                  />
+                ) : (
+                  <img 
+                    src={record.FileAttachment} 
+                    alt={record.Title} 
+                    referrerPolicy="no-referrer"
+                    className="max-w-full max-h-[60vh] rounded-2xl object-contain shadow-2xl bg-black/40 p-1"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

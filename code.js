@@ -18,11 +18,12 @@
 // Define the precise columns required for each database/sheet
 var CONFIG = {
   sheets: {
-    "PersonalData": ["Name", "DOB", "AdharNumber", "PanNumber", "DrivingLicence", "MobileNumber", "AlternateMobileNumber", "EmailID", "Photo"],
+    "PersonalData": ["Name", "DOB", "AdharNumber", "PanNumber", "DrivingLicence", "MobileNumber", "AlternateMobileNumber", "EmailID", "EpicNumber"],
     "FinancialData": ["AccountHolderName", "AccountType", "BankName", "AccountNumber", "IFSC", "UserID", "Password", "LinkedMobileNumber", "LinkedEmail", "SecurityAnswers", "CustomerID", "ProfilePassword"],
     "Card": ["Debit/Credit", "CardType", "IssuedBank", "CardNumber", "Expiry", "CVV", "PIN", "CardHolderName"],
     "Media/Gmail": ["Particulars", "Userid", "Password", "MobileNumber"],
-    "Others": ["Particulars", "Userid", "Password", "MobileNumber", "Remarks"]
+    "Others": ["Particulars", "Userid", "Password", "MobileNumber", "Remarks"],
+    "Documents": ["Title", "DocType", "DocNumber", "FileAttachment"]
   }
 };
 

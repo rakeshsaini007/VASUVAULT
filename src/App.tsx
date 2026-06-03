@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { 
-  User, Briefcase, CreditCard, Mail, Lock, 
+  User, Briefcase, CreditCard, Mail, Lock, FileText,
   Plus, Search, ArrowLeft, Database, Sparkles, 
   HelpCircle, CheckCircle2, AlertCircle, RefreshCw,
   FileSpreadsheet, ExternalLink, Settings, X, ShieldCheck
@@ -20,7 +20,8 @@ const IconMap: Record<string, React.ComponentType<any>> = {
   Briefcase: Briefcase,
   CreditCard: CreditCard,
   Mail: Mail,
-  Lock: Lock
+  Lock: Lock,
+  FileText: FileText
 };
 
 export default function App() {

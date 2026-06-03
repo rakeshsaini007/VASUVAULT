@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Save, AlertCircle } from "lucide-react";
+import { X, Save, AlertCircle, Upload, FileText, Trash2 } from "lucide-react";
 import { CategorySchema, formatExpiryToMMYY, formatCardNumber } from "../types";
 
 interface CardFormModalProps {
@@ -22,12 +22,102 @@ export default function CardFormModal({
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string>("");
+  const [fileMetaMap, setFileMetaMap] = useState<Record<string, {name: string, size: number}>>({});
+  const [isFileProcessing, setIsFileProcessing] = useState<boolean>(false);
+
+  const formatBytes = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+  const compressImage = (dataUrl: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = dataUrl;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 750;
+        const MAX_HEIGHT = 750;
+        let width = img.width;
+        let height = img.height;
+        
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/jpeg", 0.7);
+          resolve(compressed);
+        } else {
+          resolve(dataUrl);
+        }
+      };
+      img.onerror = () => {
+        resolve(dataUrl);
+      };
+    });
+  };
+
+  const processSelectedFile = async (fieldKey: string, file: File) => {
+    if (file.size > 2 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, [fieldKey]: "The file exceeds the 2MB size limit." }));
+      return;
+    }
+    
+    setIsFileProcessing(true);
+    setErrors(prev => ({ ...prev, [fieldKey]: "" }));
+    
+    try {
+      const reader = new FileReader();
+      
+      const fileLoaded = await new Promise<string>((resolve, reject) => {
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      
+      let finalDataUrl = fileLoaded;
+      
+      if (file.type.startsWith("image/")) {
+        finalDataUrl = await compressImage(fileLoaded);
+      }
+      
+      setFormData(prev => ({ ...prev, [fieldKey]: finalDataUrl }));
+      setFileMetaMap(prev => ({
+        ...prev,
+        [fieldKey]: {
+          name: file.name,
+          size: Math.floor((finalDataUrl.length * 3) / 4)
+        }
+      }));
+    } catch (err) {
+      console.error("Error reading file:", err);
+      setErrors(prev => ({ ...prev, [fieldKey]: "Failed to parse or compress this document." }));
+    } finally {
+      setIsFileProcessing(false);
+    }
+  };
 
   useEffect(() => {
     if (initialData) {
       const processed: Record<string, any> = { ...initialData };
       category.fields.forEach(f => {
-        if ((f.key === "Name" || f.key === "AccountHolderName" || f.key === "CardHolderName" || f.key === "PanNumber") && processed[f.key]) {
+        if ((f.key === "Name" || f.key === "AccountHolderName" || f.key === "CardHolderName" || f.key === "PanNumber" || f.key === "EpicNumber") && processed[f.key]) {
           processed[f.key] = String(processed[f.key]).toUpperCase();
         }
         if (f.key === "Expiry" && processed[f.key]) {
@@ -54,7 +144,7 @@ export default function CardFormModal({
 
   const handleInputChange = (key: string, value: string) => {
     let finalValue = value;
-    if (key === "Name" || key === "AccountHolderName" || key === "CardHolderName" || key === "PanNumber") {
+    if (key === "Name" || key === "AccountHolderName" || key === "CardHolderName" || key === "PanNumber" || key === "EpicNumber") {
       finalValue = value.toUpperCase();
     }
     if (key === "CardNumber") {
@@ -129,8 +219,8 @@ export default function CardFormModal({
       }
 
       if (hasValue) {
-        // Name, AccountHolderName, CardHolderName: must be in uppercase
-        if (f.key === "Name" || f.key === "AccountHolderName" || f.key === "CardHolderName") {
+        // Name, AccountHolderName, CardHolderName, EpicNumber, PanNumber: must be in uppercase
+        if (f.key === "Name" || f.key === "AccountHolderName" || f.key === "CardHolderName" || f.key === "EpicNumber" || f.key === "PanNumber") {
           const rawVal = String(val);
           if (/[a-z]/.test(rawVal)) {
             newErrors[f.key] = `${f.label} must be in uppercase letters only.`;
@@ -300,6 +390,111 @@ export default function CardFormModal({
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
                       </select>
+                    ) : field.type === "file" ? (
+                      <div className="space-y-3">
+                        <input
+                          id={`input-${field.key}`}
+                          type="file"
+                          accept="image/*,application/pdf"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            await processSelectedFile(field.key, file);
+                          }}
+                        />
+                        
+                        {formData[field.key] ? (
+                          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 flex flex-col md:flex-row items-center gap-4 transition hover:border-white/20">
+                            <div className="h-16 w-16 rounded-xl bg-slate-900 border border-white/5 flex items-center justify-center shrink-0 overflow-hidden">
+                              {formData[field.key].startsWith("data:image/") || formData[field.key].startsWith("data:image/svg") ? (
+                                <img 
+                                  src={formData[field.key]} 
+                                  alt="Attachment Preview" 
+                                  referrerPolicy="no-referrer"
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <FileText className="h-8 w-8 text-indigo-400" />
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0 text-center md:text-left">
+                              <p className="text-sm font-bold text-slate-100 truncate">
+                                {fileMetaMap[field.key]?.name || `${formData.Title || "Attached Document"}.${formData[field.key].includes("pdf") ? "pdf" : "jpg"}`}
+                              </p>
+                              <p className="text-xs text-indigo-400 font-bold mt-1">
+                                {fileMetaMap[field.key]?.size 
+                                  ? formatBytes(fileMetaMap[field.key].size) 
+                                  : formatBytes(Math.floor((formData[field.key].length * 3) / 4))} (Spreadsheet Saved)
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <label 
+                                htmlFor={`input-${field.key}`}
+                                className="cursor-pointer px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-350 transition"
+                              >
+                                Replace
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, [field.key]: "" }));
+                                  setFileMetaMap(prev => {
+                                    const next = { ...prev };
+                                    delete next[field.key];
+                                    return next;
+                                  });
+                                }}
+                                className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 hover:bg-rose-500/20 transition"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div 
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.currentTarget.classList.add("border-indigo-500", "bg-indigo-500/5");
+                            }}
+                            onDragLeave={(e) => {
+                              e.preventDefault();
+                              e.currentTarget.classList.remove("border-indigo-500", "bg-indigo-500/5");
+                            }}
+                            onDrop={async (e) => {
+                              e.preventDefault();
+                              e.currentTarget.classList.remove("border-indigo-500", "bg-indigo-500/5");
+                              const file = e.dataTransfer.files?.[0];
+                              if (file) {
+                                await processSelectedFile(field.key, file);
+                              }
+                            }}
+                            onClick={() => document.getElementById(`input-${field.key}`)?.click()}
+                            className={`group border-2 border-dashed border-white/10 bg-white/5 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-500/5 transition duration-200 ${
+                              hasError ? "border-rose-500 ring-2 ring-rose-500/20" : ""
+                            }`}
+                          >
+                            <div className="p-3 bg-white/5 rounded-full border border-white/5 text-slate-400 group-hover:bg-indigo-500/10 group-hover:border-indigo-500/20 group-hover:text-indigo-400 transition duration-300 mb-3">
+                              {isFileProcessing ? (
+                                <svg className="animate-spin h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                              ) : (
+                                <Upload className="h-6 w-6" />
+                              )}
+                            </div>
+                            <span className="text-sm font-bold text-slate-200">
+                              {isFileProcessing ? "Processing..." : "Select photo / scan or drag here"}
+                            </span>
+                            <span className="text-xs text-slate-400 mt-1 leading-normal max-w-xs">
+                              Supports Passport Photo, National ID PDFs or Cards (Max 2MB)
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <input
                         id={`input-${field.key}`}
@@ -311,7 +506,7 @@ export default function CardFormModal({
                         className={`w-full rounded-2xl border px-4 py-3 text-sm bg-white/5 border-white/10 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition ${
                           hasError 
                             ? "border-rose-500 ring-2 ring-rose-500/20" 
-                            : "focus:border-indigo-500"
+                            : "focus:border-indigo-505"
                         }`}
                       />
                     )}

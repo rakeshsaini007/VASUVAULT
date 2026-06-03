@@ -16,7 +16,7 @@ export interface PersonalDataRecord extends RecordBase {
   MobileNumber: string;
   AlternateMobileNumber: string;
   EmailID: string;
-  Photo: string;
+  EpicNumber?: string;
 }
 
 export interface FinancialDataRecord extends RecordBase {
@@ -60,10 +60,17 @@ export interface OthersRecord extends RecordBase {
   Remarks: string;
 }
 
+export interface DocumentsRecord extends RecordBase {
+  Title: string;
+  DocType: string;
+  DocNumber?: string;
+  FileAttachment: string;
+}
+
 export interface FieldDefinition {
   key: string;
   label: string;
-  type: "text" | "date" | "password" | "tel" | "email" | "url" | "select";
+  type: "text" | "date" | "password" | "tel" | "email" | "url" | "select" | "file";
   placeholder: string;
   options?: string[]; // for "select" type
   required: boolean;
@@ -96,7 +103,7 @@ export const CATEGORIES: CategorySchema[] = [
       { key: "MobileNumber", label: "Primary Mobile Number", type: "tel", placeholder: "e.g. +91 98765 43210", required: true },
       { key: "AlternateMobileNumber", label: "Alternate Mobile Number", type: "tel", placeholder: "e.g. +91 98765 01234", required: false },
       { key: "EmailID", label: "Personal Email ID", type: "email", placeholder: "e.g. john.doe@gmail.com", required: false },
-      { key: "Photo", label: "Photo / Avatar URL", type: "url", placeholder: "e.g. https://images.unsplash.com/...", required: false },
+      { key: "EpicNumber", label: "EPIC Number", type: "text", placeholder: "e.g. ABC1234567", required: false },
     ]
   },
   {
@@ -167,6 +174,20 @@ export const CATEGORIES: CategorySchema[] = [
       { key: "MobileNumber", label: "Registered Mobile", type: "tel", placeholder: "e.g. +91 98765 43210", required: false },
       { key: "Remarks", label: "Additional Remarks / Notes", type: "text", placeholder: "e.g. Key kept in the upper bedside drawer", required: false },
     ]
+  },
+  {
+    id: "documents",
+    title: "Document Vault",
+    sheetName: "Documents",
+    description: "Secure digital locker for passport-sized photos, Aadhaar cards, Voter cards, PAN cards, and other PDFs/scans.",
+    icon: "FileText",
+    color: "purple",
+    fields: [
+      { key: "Title", label: "Document Name / Title", type: "text", placeholder: "e.g. Passport Photo 2026, My Aadhaar Card", required: true },
+      { key: "DocType", label: "Document Category", type: "select", placeholder: "Select category", options: ["Passport Photo", "Aadhaar Card", "Driving Licence", "Voter ID Card", "PAN Card", "Other Document / Card"], required: true },
+      { key: "DocNumber", label: "Document ID / Reference No.", type: "text", placeholder: "e.g. Aadhaar No, Voter Card No, PAN No", required: false },
+      { key: "FileAttachment", label: "Upload Photo or PDF", type: "file", placeholder: "Select or drag & drop a PDF, JPG or PNG file", required: true }
+    ]
   }
 ];
 
@@ -183,7 +204,7 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
       MobileNumber: "+91 98123 45678",
       AlternateMobileNumber: "+91 98123 99999",
       EmailID: "aarav.sharma@gmail.com",
-      Photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&fit=crop"
+      EpicNumber: "XYZ1234567"
     },
     {
       _rowNum: 3,
@@ -195,7 +216,7 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
       MobileNumber: "+91 98765 43210",
       AlternateMobileNumber: "",
       EmailID: "diya.patel@hotmail.com",
-      Photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&h=256&fit=crop"
+      EpicNumber: "ABC9876543"
     }
   ],
   "FinancialData": [
@@ -286,6 +307,22 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
       Password: "92-41-07-A",
       MobileNumber: "+91 98123 45678",
       Remarks: "Turn clockwise twice to 92, then counter-clockwise to 41."
+    }
+  ],
+  "Documents": [
+    {
+      _rowNum: 2,
+      Title: "Adhar Scan Copy",
+      DocType: "Aadhaar Card",
+      DocNumber: "5123 4567 8901",
+      FileAttachment: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='250' viewBox='0 0 400 250'><rect width='100%' height='100%' fill='%230f172a' rx='16'/><rect x='20' y='20' width='360' height='210' fill='none' stroke='%2338bdf8' stroke-width='2' stroke-dasharray='4' rx='12'/><text x='40' y='60' fill='%23f1f5f9' font-family='sans-serif' font-size='20' font-weight='bold'>AADHAAR CARD</text><text x='40' y='90' fill='%2394a3b8' font-family='sans-serif' font-size='12'>Government of India</text><rect x='40' y='120' width='60' height='60' fill='%2338bdf8' opacity='0.2'/><path d='M50 130 h40 v40 h-40 z' fill='none' stroke='%2338bdf8' stroke-width='2'/><text x='120' y='140' fill='%23f1f5f9' font-family='sans-serif' font-size='14' font-weight='bold'>Aarav Sharma</text><text x='120' y='160' fill='%2394a3b8' font-family='sans-serif' font-size='12'>DOB: 14/08/1994</text><text x='40' y='210' fill='%2338bdf8' font-family='monospace' font-size='18' font-weight='bold'>5123  4567  8901</text></svg>"
+    },
+    {
+      _rowNum: 3,
+      Title: "Passport Size Photograph",
+      DocType: "Passport Photo",
+      DocNumber: "Photo-Aarav",
+      FileAttachment: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'><rect width='100%' height='100%' fill='%233b82f6'/><circle cx='75' cy='60' r='30' fill='%231e293b'/><path d='M25 140 c10-35 90-35 100 0 z' fill='%231e293b'/></svg>"
     }
   ]
 };
