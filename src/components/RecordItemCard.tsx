@@ -802,6 +802,24 @@ export default function RecordItemCard({
             </div>
           )}
 
+          {/* Recovery Email details */}
+          {record.RecoveryMail && (
+            <div className="flex items-center justify-between p-1.5 text-slate-400 text-xs">
+              <span className="flex items-center gap-1.5 text-slate-500">
+                <Mail className="h-4 w-4" /> Recovery Email:
+              </span>
+              <span className="font-mono text-white font-black flex items-center gap-1">
+                <span className="truncate max-w-[140px]" title={record.RecoveryMail}>{record.RecoveryMail}</span>
+                <button 
+                  onClick={() => triggerCopy(record.RecoveryMail, "recoverymail")}
+                  className="p-1 hover:bg-white/10 rounded-lg transition text-slate-400 hover:text-white"
+                >
+                  {copiedKey === "recoverymail" ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                </button>
+              </span>
+            </div>
+          )}
+
           {/* Others special notes/remarks */}
           {category.id === "others" && record.Remarks && (
             <div className="p-3 bg-rose-500/10 border border-rose-500/10 rounded-2xl text-xs italic text-rose-300 leading-relaxed">

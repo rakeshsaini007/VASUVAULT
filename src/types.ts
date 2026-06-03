@@ -50,6 +50,7 @@ export interface MediaGmailRecord extends RecordBase {
   Userid: string;
   Password: string;
   MobileNumber: string;
+  RecoveryMail?: string;
 }
 
 export interface OthersRecord extends RecordBase {
@@ -158,6 +159,7 @@ export const CATEGORIES: CategorySchema[] = [
       { key: "Userid", label: "Username / Login Email", type: "text", placeholder: "e.g. john.office@gmail.com", required: true },
       { key: "Password", label: "Service Password", type: "password", placeholder: "••••••••", required: true },
       { key: "MobileNumber", label: "Recovery Mobile Number", type: "tel", placeholder: "e.g. +91 98765 43210", required: false },
+      { key: "RecoveryMail", label: "Recovery Email Address", type: "email", placeholder: "e.g. recovery@gmail.com", required: false },
     ]
   },
   {
@@ -281,14 +283,16 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
       Particulars: "Google Account (Primary)",
       Userid: "as.sharma.1994@gmail.com",
       Password: "MySuperSecretGmailPass2026",
-      MobileNumber: "+91 98123 45678"
+      MobileNumber: "+91 98123 45678",
+      RecoveryMail: "recovery.sharma@outlook.com"
     },
     {
       _rowNum: 3,
       Particulars: "Netflix Premium",
       Userid: "sharmas.family@gmail.com",
       Password: "NetflixAndChills99!",
-      MobileNumber: "+91 98123 99999"
+      MobileNumber: "+91 98123 99999",
+      RecoveryMail: "nas.backup@gmail.com"
     }
   ],
   "Others": [

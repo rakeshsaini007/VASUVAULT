@@ -21,7 +21,7 @@ var CONFIG = {
     "PersonalData": ["Name", "DOB", "AdharNumber", "PanNumber", "DrivingLicence", "MobileNumber", "AlternateMobileNumber", "EmailID", "EpicNumber"],
     "FinancialData": ["AccountHolderName", "AccountType", "BankName", "AccountNumber", "IFSC", "UserID", "Password", "LinkedMobileNumber", "LinkedEmail", "SecurityAnswers", "CustomerID", "ProfilePassword"],
     "Card": ["Debit/Credit", "CardType", "IssuedBank", "CardNumber", "Expiry", "CVV", "PIN", "CardHolderName"],
-    "Media/Gmail": ["Particulars", "Userid", "Password", "MobileNumber"],
+    "Media/Gmail": ["Particulars", "Userid", "Password", "MobileNumber", "RecoveryMail"],
     "Others": ["Particulars", "Userid", "Password", "MobileNumber", "Remarks"],
     "Documents": ["Title", "DocType", "DocNumber", "FileAttachment"]
   }
