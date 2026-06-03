@@ -128,7 +128,7 @@ export const CATEGORIES: CategorySchema[] = [
       { key: "Debit/Credit", label: "Debit/Credit", type: "select", placeholder: "Select Debit/Credit", options: ["Debit", "Credit"], required: true },
       { key: "CardType", label: "Card Type / Association", type: "select", placeholder: "Select Card Type", options: ["Visa", "Mastercard", "Rupay", "Amex", "Maestro", "Other"], required: true },
       { key: "IssuedBank", label: "Issued Bank Name", type: "text", placeholder: "e.g. HDFC Bank", required: true },
-      { key: "CardNumber", label: "16-digit Card Number", type: "text", placeholder: "e.g. 4111 2222 3333 4444", required: true },
+      { key: "CardNumber", label: "16-digit Card Number", type: "text", placeholder: "e.g. 1234-3456-6789-1234", required: true },
       { key: "Expiry", label: "Expiry Date (MM/YY)", type: "text", placeholder: "MM/YY (e.g. 12/29)", required: true },
       { key: "CVV", label: "CVV Number (3-digit)", type: "password", placeholder: "e.g. 123", required: true },
       { key: "PIN", label: "ATM / Transaction PIN", type: "password", placeholder: "e.g. 9912", required: false },
@@ -228,7 +228,7 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
       "Debit/Credit": "Credit",
       CardType: "Visa",
       IssuedBank: "SBI Card",
-      CardNumber: "4321 8899 7711 0022",
+      CardNumber: "4321-8899-7711-0022",
       Expiry: "09/28",
       CVV: "452",
       PIN: "4102",
@@ -239,7 +239,7 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
       "Debit/Credit": "Debit",
       CardType: "Mastercard",
       IssuedBank: "Axis Bank",
-      CardNumber: "5243 0012 3456 7890",
+      CardNumber: "5243-0012-3456-7890",
       Expiry: "04/30",
       CVV: "089",
       PIN: "3591",
@@ -281,3 +281,57 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
     }
   ]
 };
+
+export function formatExpiryToMMYY(val: any): string {
+  if (!val) return "MM/YY";
+  const str = String(val).trim();
+  if (!str) return "MM/YY";
+
+  // If it is already in MM/YY format (e.g. 12/29)
+  if (/^(0[1-9]|1[0-2])\/\d{2}$/.test(str)) {
+    return str;
+  }
+
+  // Check if it matches YYYY-MM-DD or YYYY-MM
+  const yyyymmddMatch = str.match(/^(\d{4})-(\d{2})(?:-\d{2})?$/);
+  if (yyyymmddMatch) {
+    const year = yyyymmddMatch[1];
+    const month = yyyymmddMatch[2];
+    return `${month}/${year.slice(-2)}`;
+  }
+
+  // Try parsing with JavaScript Date
+  try {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = String(d.getFullYear()).slice(-2);
+      return `${month}/${year}`;
+    }
+  } catch (e) {
+    // Falls through to next options
+  }
+
+  // If we can't parse it but it has a slash, e.g. "03/2026"
+  if (str.includes("/")) {
+    const parts = str.split("/");
+    if (parts.length === 2 && parts[0].length <= 2 && parts[1].length === 4) {
+      return `${parts[0].padStart(2, "0")}/${parts[1].slice(-2)}`;
+    }
+  }
+
+  return str;
+}
+
+export function formatCardNumber(val: any): string {
+  if (!val) return "";
+  const clean = String(val).replace(/\D/g, "");
+  // Limit to 16 digits
+  const limited = clean.slice(0, 16);
+  const parts = [];
+  for (let i = 0; i < limited.length; i += 4) {
+    parts.push(limited.slice(i, i + 4));
+  }
+  return parts.join("-");
+}
+

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, Save, AlertCircle } from "lucide-react";
-import { CategorySchema } from "../types";
+import { CategorySchema, formatExpiryToMMYY, formatCardNumber } from "../types";
 
 interface CardFormModalProps {
   isOpen: boolean;
@@ -30,6 +30,12 @@ export default function CardFormModal({
         if ((f.key === "Name" || f.key === "AccountHolderName" || f.key === "CardHolderName" || f.key === "PanNumber") && processed[f.key]) {
           processed[f.key] = String(processed[f.key]).toUpperCase();
         }
+        if (f.key === "Expiry" && processed[f.key]) {
+          processed[f.key] = formatExpiryToMMYY(processed[f.key]);
+        }
+        if (f.key === "CardNumber" && processed[f.key]) {
+          processed[f.key] = formatCardNumber(processed[f.key]);
+        }
       });
       setFormData(processed);
     } else {
@@ -50,6 +56,9 @@ export default function CardFormModal({
     let finalValue = value;
     if (key === "Name" || key === "AccountHolderName" || key === "CardHolderName" || key === "PanNumber") {
       finalValue = value.toUpperCase();
+    }
+    if (key === "CardNumber") {
+      finalValue = formatCardNumber(value);
     }
     if (key === "CVV") {
       const digitsOnly = value.replace(/\D/g, "");

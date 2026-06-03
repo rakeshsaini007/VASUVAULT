@@ -3,7 +3,7 @@ import {
   Copy, Check, Eye, EyeOff, Edit2, Trash2, 
   User, CreditCard, Landmark, Mail, Lock, FileText, Phone, Calendar
 } from "lucide-react";
-import { CategorySchema } from "../types";
+import { CategorySchema, formatExpiryToMMYY, formatCardNumber } from "../types";
 
 interface RecordItemCardProps {
   key?: any;
@@ -400,12 +400,12 @@ export default function RecordItemCard({
             {/* Card Number */}
             <div className="my-6 flex items-center justify-between">
               <span className="font-mono text-base font-black tracking-widest text-white">
-                {record.CardNumber || "•••• •••• •••• ••••"}
+                {formatCardNumber(record.CardNumber) || "••••-••••-••••-••••"}
               </span>
               {record.CardNumber && (
                 <button
                   type="button"
-                  onClick={() => triggerCopy(record.CardNumber, "card_no")}
+                  onClick={() => triggerCopy(formatCardNumber(record.CardNumber), "card_no")}
                   className="p-1 rounded-lg hover:bg-white/15 text-white/80 hover:text-white transition"
                 >
                   {copiedKey === "card_no" ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
@@ -424,7 +424,7 @@ export default function RecordItemCard({
               <div className="flex items-center gap-4">
                 <div>
                   <p className="text-[8px] uppercase font-black tracking-widest opacity-60">Expires</p>
-                  <p className="font-mono font-black mt-0.5">{record.Expiry || "MM/YY"}</p>
+                  <p className="font-mono font-black mt-0.5">{formatExpiryToMMYY(record.Expiry)}</p>
                 </div>
                 <div>
                   <p className="text-[8px] uppercase font-black tracking-widest opacity-60">CVV</p>
