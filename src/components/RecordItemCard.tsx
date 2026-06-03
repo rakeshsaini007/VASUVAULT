@@ -300,6 +300,42 @@ export default function RecordItemCard({
               </div>
             )}
 
+            {record.CustomerID && (
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5">
+                <span className="text-slate-400 font-bold">Customer ID:</span>
+                <span className="font-mono text-white flex items-center gap-1.5">
+                  <span className="font-black">{record.CustomerID}</span>
+                  <button 
+                    onClick={() => triggerCopy(record.CustomerID, "cust_id")}
+                    className="p-1 hover:text-white text-slate-400 rounded-lg hover:bg-white/5 transition"
+                  >
+                    {copiedKey === "cust_id" ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </span>
+              </div>
+            )}
+
+            {record.ProfilePassword && (
+              <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5">
+                <span className="text-slate-400 font-bold">Profile PW:</span>
+                <span className="font-mono text-white flex items-center gap-1.5">
+                  <span className="font-black">{revealSecrets["prof_pwd"] ? record.ProfilePassword : "••••••••"}</span>
+                  <button 
+                    onClick={() => toggleSecret("prof_pwd")} 
+                    className="p-1 hover:text-white text-slate-400 rounded-lg hover:bg-white/5 transition"
+                  >
+                    {revealSecrets["prof_pwd"] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
+                  <button 
+                    onClick={() => triggerCopy(record.ProfilePassword, "prof_pwd_copy")}
+                    className="p-1 hover:text-white text-slate-400 rounded-lg hover:bg-white/5 transition"
+                  >
+                    {copiedKey === "prof_pwd_copy" ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  </button>
+                </span>
+              </div>
+            )}
+
             {/* Other details */}
             {(record.LinkedMobileNumber || record.LinkedEmail) && (
               <div className="pt-2.5 border-t border-white/5 space-y-1 text-slate-400 hover:text-slate-350 transition">

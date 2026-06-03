@@ -30,6 +30,8 @@ export interface FinancialDataRecord extends RecordBase {
   LinkedMobileNumber: string;
   LinkedEmail: string;
   SecurityAnswers: string;
+  CustomerID?: string;
+  ProfilePassword?: string;
 }
 
 export interface CardRecord extends RecordBase {
@@ -115,6 +117,8 @@ export const CATEGORIES: CategorySchema[] = [
       { key: "LinkedMobileNumber", label: "Linked Mobile Number", type: "tel", placeholder: "e.g. +91 98765 43210", required: false },
       { key: "LinkedEmail", label: "Linked Email Address", type: "email", placeholder: "e.g. registered@email.com", required: false },
       { key: "SecurityAnswers", label: "Security Questions & Answers", type: "text", placeholder: "e.g. Pet: Rex, Highschool: Central High", required: false },
+      { key: "CustomerID", label: "Customer ID", type: "text", placeholder: "e.g. 98124578", required: false },
+      { key: "ProfilePassword", label: "PROFILE PASSWORD", type: "password", placeholder: "••••••••", required: false },
     ]
   },
   {
@@ -206,7 +210,9 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
       Password: "SecurePassword123!",
       LinkedMobileNumber: "+91 98123 45678",
       LinkedEmail: "aarav.sharma@gmail.com",
-      SecurityAnswers: "First pet: Sparky. Place of birth: New Delhi."
+      SecurityAnswers: "First pet: Sparky. Place of birth: New Delhi.",
+      CustomerID: "88127394",
+      ProfilePassword: "ProfilePass1!"
     },
     {
       _rowNum: 3,
@@ -219,7 +225,9 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
       Password: "BusinessBizPass987#",
       LinkedMobileNumber: "+91 98123 45678",
       LinkedEmail: "billing@sharmasolutions.com",
-      SecurityAnswers: "Maternal grandmother: Preeti."
+      SecurityAnswers: "Maternal grandmother: Preeti.",
+      CustomerID: "7219034",
+      ProfilePassword: "BizProfilePass99"
     }
   ],
   "Card": [
