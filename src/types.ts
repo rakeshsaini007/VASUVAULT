@@ -33,6 +33,7 @@ export interface FinancialDataRecord extends RecordBase {
 }
 
 export interface CardRecord extends RecordBase {
+  "Debit/Credit"?: string;
   CardType: string;
   IssuedBank: string;
   CardNumber: string;
@@ -105,7 +106,7 @@ export const CATEGORIES: CategorySchema[] = [
     color: "emerald",
     fields: [
       { key: "AccountHolderName", label: "Account Holder Name", type: "text", placeholder: "e.g. John Doe", required: true },
-      { key: "AccountType", label: "Account Type", type: "select", placeholder: "Select Account Type", options: ["Savings", "Current", "Salary", "Fixed Deposit", "Other"], required: true },
+      { key: "AccountType", label: "Account Type", type: "select", placeholder: "Select Account Type", options: ["Savings", "Current", "Salary", "Fixed Deposit", "Demat"], required: true },
       { key: "BankName", label: "Bank Name", type: "text", placeholder: "e.g. State Bank of India", required: true },
       { key: "AccountNumber", label: "Account Number", type: "text", placeholder: "e.g. 30912345678", required: true },
       { key: "IFSC", label: "IFSC Code", type: "text", placeholder: "e.g. SBIN0001234", required: true },
@@ -124,6 +125,7 @@ export const CATEGORIES: CategorySchema[] = [
     icon: "CreditCard",
     color: "cyan",
     fields: [
+      { key: "Debit/Credit", label: "Debit/Credit", type: "select", placeholder: "Select Debit/Credit", options: ["Debit", "Credit"], required: true },
       { key: "CardType", label: "Card Type / Association", type: "select", placeholder: "Select Card Type", options: ["Visa", "Mastercard", "Rupay", "Amex", "Maestro", "Other"], required: true },
       { key: "IssuedBank", label: "Issued Bank Name", type: "text", placeholder: "e.g. HDFC Bank", required: true },
       { key: "CardNumber", label: "16-digit Card Number", type: "text", placeholder: "e.g. 4111 2222 3333 4444", required: true },
@@ -223,6 +225,7 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
   "Card": [
     {
       _rowNum: 2,
+      "Debit/Credit": "Credit",
       CardType: "Visa",
       IssuedBank: "SBI Card",
       CardNumber: "4321 8899 7711 0022",
@@ -233,6 +236,7 @@ export const INITIAL_SIMULATED_DATA: Record<string, any[]> = {
     },
     {
       _rowNum: 3,
+      "Debit/Credit": "Debit",
       CardType: "Mastercard",
       IssuedBank: "Axis Bank",
       CardNumber: "5243 0012 3456 7890",

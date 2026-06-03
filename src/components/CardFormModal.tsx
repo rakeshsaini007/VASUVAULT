@@ -27,7 +27,7 @@ export default function CardFormModal({
     if (initialData) {
       const processed: Record<string, any> = { ...initialData };
       category.fields.forEach(f => {
-        if ((f.key === "Name" || f.key === "AccountHolderName" || f.key === "CardHolderName") && processed[f.key]) {
+        if ((f.key === "Name" || f.key === "AccountHolderName" || f.key === "CardHolderName" || f.key === "PanNumber") && processed[f.key]) {
           processed[f.key] = String(processed[f.key]).toUpperCase();
         }
       });
@@ -48,7 +48,7 @@ export default function CardFormModal({
 
   const handleInputChange = (key: string, value: string) => {
     let finalValue = value;
-    if (key === "Name" || key === "AccountHolderName" || key === "CardHolderName") {
+    if (key === "Name" || key === "AccountHolderName" || key === "CardHolderName" || key === "PanNumber") {
       finalValue = value.toUpperCase();
     }
     if (key === "CVV") {

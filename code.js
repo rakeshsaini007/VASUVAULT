@@ -1,5 +1,5 @@
 /**
- * Google Apps Script for "Sheets Personal Vault Manager"
+ * Google Apps Script for "Vasu Vault"
  * 
  * INSTRUCTIONS FOR DEPLOYMENT:
  * 1. Open your Google Spreadsheet (e.g., rename it or create a new one).
@@ -20,7 +20,7 @@ var CONFIG = {
   sheets: {
     "PersonalData": ["Name", "DOB", "AdharNumber", "PanNumber", "DrivingLicence", "MobileNumber", "AlternateMobileNumber", "EmailID", "Photo"],
     "FinancialData": ["AccountHolderName", "AccountType", "BankName", "AccountNumber", "IFSC", "UserID", "Password", "LinkedMobileNumber", "LinkedEmail", "SecurityAnswers"],
-    "Card": ["CardType", "IssuedBank", "CardNumber", "Expiry", "CVV", "PIN", "CardHolderName"],
+    "Card": ["Debit/Credit", "CardType", "IssuedBank", "CardNumber", "Expiry", "CVV", "PIN", "CardHolderName"],
     "Media/Gmail": ["Particulars", "Userid", "Password", "MobileNumber"],
     "Others": ["Particulars", "Userid", "Password", "MobileNumber", "Remarks"]
   }
@@ -59,17 +59,38 @@ function doPost(e) {
     
     var ss = getOrCreateSpreadsheet();
     var sheet = ss.getSheetByName(sheetName);
-    var headers = CONFIG.sheets[sheetName];
+    var configuredHeaders = CONFIG.sheets[sheetName];
     
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
-      sheet.appendRow(headers);
+      sheet.appendRow(configuredHeaders);
+    }
+    
+    // Read actual headers to stay aligned with current sheet structure
+    var lastCol = sheet.getLastColumn();
+    var actualHeaders = [];
+    if (lastCol > 0) {
+      actualHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+        return h ? h.toString().trim() : "";
+      });
+    } else {
+      actualHeaders = configuredHeaders.slice();
+      sheet.appendRow(actualHeaders);
+    }
+    
+    // Self-healing: Automatically append any newly configured schema columns to the sheet
+    for (var k = 0; k < configuredHeaders.length; k++) {
+      var confH = configuredHeaders[k];
+      if (actualHeaders.indexOf(confH) === -1) {
+        actualHeaders.push(confH);
+        sheet.getRange(1, actualHeaders.length).setValue(confH);
+      }
     }
     
     if (action === "add") {
       var newRow = [];
-      for (var i = 0; i < headers.length; i++) {
-        var key = headers[i];
+      for (var i = 0; i < actualHeaders.length; i++) {
+        var key = actualHeaders[i];
         newRow.push(data[key] !== undefined ? data[key] : "");
       }
       sheet.appendRow(newRow);
@@ -82,10 +103,10 @@ function doPost(e) {
       if (!rowNum || rowNum < 2) {
         throw new Error("Invalid or missing row number: " + rowNum);
       }
-      var range = sheet.getRange(rowNum, 1, 1, headers.length);
+      var range = sheet.getRange(rowNum, 1, 1, actualHeaders.length);
       var values = [];
-      for (var i = 0; i < headers.length; i++) {
-        var key = headers[i];
+      for (var i = 0; i < actualHeaders.length; i++) {
+        var key = actualHeaders[i];
         values.push(data[key] !== undefined ? data[key] : "");
       }
       range.setValues([values]);
@@ -125,11 +146,32 @@ function readAllSheetsData() {
   
   for (var sheetName in CONFIG.sheets) {
     var sheet = ss.getSheetByName(sheetName);
-    var headers = CONFIG.sheets[sheetName];
+    var configuredHeaders = CONFIG.sheets[sheetName];
     
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
-      sheet.appendRow(headers);
+      sheet.appendRow(configuredHeaders);
+    }
+    
+    // Read actual headers (row 1)
+    var lastCol = sheet.getLastColumn();
+    var actualHeaders = [];
+    if (lastCol > 0) {
+      actualHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) {
+        return h ? h.toString().trim() : "";
+      });
+    } else {
+      actualHeaders = configuredHeaders.slice();
+      sheet.appendRow(actualHeaders);
+    }
+    
+    // Check for missing configured headers, and dynamically append them
+    for (var k = 0; k < configuredHeaders.length; k++) {
+      var confH = configuredHeaders[k];
+      if (actualHeaders.indexOf(confH) === -1) {
+        actualHeaders.push(confH);
+        sheet.getRange(1, actualHeaders.length).setValue(confH);
+      }
     }
     
     var dataRange = sheet.getDataRange();
@@ -145,18 +187,21 @@ function readAllSheetsData() {
       var row = rows[i];
       var record = { _rowNum: i + 1 }; // Track exact row number (Header is Row 1)
       
-      for (var j = 0; j < headers.length; j++) {
-        var val = row[j];
+      for (var j = 0; j < configuredHeaders.length; j++) {
+        var key = configuredHeaders[j];
+        var colIndex = actualHeaders.indexOf(key);
+        var val = colIndex !== -1 ? row[colIndex] : "";
+        
         if (val instanceof Date) {
           // Format date strings as YYYY-MM-DD
           try {
             var tz = ss.getSpreadsheetTimeZone();
-            record[headers[j]] = Utilities.formatDate(val, tz, "yyyy-MM-dd");
+            record[key] = Utilities.formatDate(val, tz, "yyyy-MM-dd");
           } catch(e) {
-            record[headers[j]] = val.toISOString().slice(0, 10);
+            record[key] = val.toISOString().slice(0, 10);
           }
         } else {
-          record[headers[j]] = val !== undefined ? val.toString() : "";
+          record[key] = val !== undefined ? val.toString() : "";
         }
       }
       dataList.push(record);
@@ -175,7 +220,7 @@ function disableCors(output) {
 
 /**
  * Returns the active container spreadsheet, or automatically retrieves/creates a
- * standalone spreadsheet named 'Sheets Personal Vault' under the user's account properties.
+ * standalone spreadsheet named 'Vasu Vault' under the user's account properties.
  */
 function getOrCreateSpreadsheet() {
   var ss = null;
@@ -194,7 +239,7 @@ function getOrCreateSpreadsheet() {
   }
 
   // Create a new spreadsheet
-  ss = SpreadsheetApp.create("Sheets Personal Vault");
+  ss = SpreadsheetApp.create("Vasu Vault");
   properties.setProperty("SPREADSHEET_ID", ss.getId());
   return ss;
 }

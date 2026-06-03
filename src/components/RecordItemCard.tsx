@@ -385,9 +385,16 @@ export default function RecordItemCard({
                   <span className="text-[7px] text-yellow-300 font-mono leading-none">█</span>
                 </div>
               </div>
-              <span className="text-sm font-black tracking-widest italic py-0.5 px-3 rounded-full bg-white/10">
-                {record.CardType || "Card"}
-              </span>
+              <div className="flex flex-col items-end gap-1.5 shrink-0">
+                <span className="text-sm font-black tracking-widest italic py-0.5 px-3 rounded-full bg-white/10">
+                  {record.CardType || "Card"}
+                </span>
+                {record["Debit/Credit"] && (
+                  <span className="text-[9px] font-black tracking-widest uppercase py-0.5 px-2.5 rounded-md bg-white/15 border border-white/5 text-white/90">
+                    {record["Debit/Credit"]}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Card Number */}
