@@ -1,6 +1,6 @@
 {
   "name": "Vasu Vault",
   "description": "A secure client dashboard to add, edit, and view personal, financial, card, media, and other records stored directly inside Google Sheets.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

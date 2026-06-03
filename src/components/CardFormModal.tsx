@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { X, Save, AlertCircle, Upload, FileText, Trash2 } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Save, AlertCircle, Upload, FileText, Trash2, Camera, RefreshCw } from "lucide-react";
 import { CategorySchema, formatExpiryToMMYY, formatCardNumber } from "../types";
 
 interface CardFormModalProps {
@@ -24,6 +24,14 @@ export default function CardFormModal({
   const [generalError, setGeneralError] = useState<string>("");
   const [fileMetaMap, setFileMetaMap] = useState<Record<string, {name: string, size: number}>>({});
   const [isFileProcessing, setIsFileProcessing] = useState<boolean>(false);
+
+  // Camera integration state helper
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [activeCameraField, setActiveCameraField] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
+  const [cameraError, setCameraError] = useState<string>("");
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -112,6 +120,120 @@ export default function CardFormModal({
       setIsFileProcessing(false);
     }
   };
+
+  // --- CAMERA CAPTURE UTILITIES ---
+  const startCamera = async (fieldKey: string, mode: "user" | "environment" = facingMode) => {
+    setCameraError("");
+    setIsCameraActive(true);
+    setActiveCameraField(fieldKey);
+    
+    // Stop any existing stream
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: mode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: false
+      });
+      
+      setCameraStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(err => {
+          console.error("Video play error:", err);
+        });
+      }
+    } catch (err: any) {
+      console.error("Camera access failed:", err);
+      let errorMsg = "Could not access camera.";
+      if (err.name === "NotAllowedError") {
+        errorMsg = "Camera permission denied. Please allow camera access in your browser or click 'Open App in a New Tab' in the top-right.";
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        errorMsg = "No camera found on this device.";
+      } else {
+        errorMsg = `Camera error: ${err.message || 'Check browser permissions.'}`;
+      }
+      setCameraError(errorMsg);
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+    }
+    setCameraStream(null);
+    setIsCameraActive(false);
+    setActiveCameraField(null);
+    setCameraError("");
+  };
+
+  const toggleFacingMode = (fieldKey: string) => {
+    const nextMode = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(nextMode);
+    startCamera(fieldKey, nextMode);
+  };
+
+  const capturePhoto = async (fieldKey: string) => {
+    if (!videoRef.current) return;
+    
+    try {
+      const video = videoRef.current;
+      const canvas = document.createElement("canvas");
+      
+      // Match physical size of video to avoid resolution issues
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        
+        setIsFileProcessing(true);
+        const compressed = await compressImage(dataUrl);
+        
+        setFormData(prev => ({ ...prev, [fieldKey]: compressed }));
+        setFileMetaMap(prev => ({
+          ...prev,
+          [fieldKey]: {
+            name: `CameraPhoto_${new Date().toISOString().slice(0, 10)}_${Math.floor(Math.random() * 1000)}.jpg`,
+            size: Math.floor((compressed.length * 3) / 4)
+          }
+        }));
+      }
+      stopCamera();
+    } catch (err) {
+      console.error("Error capturing photo:", err);
+      setErrors(prev => ({ ...prev, [fieldKey]: "Failed to capture photo from camera stream." }));
+    } finally {
+      setIsFileProcessing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isCameraActive && cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.play().catch(err => console.error("Play error in effect:", err));
+    }
+  }, [cameraStream, isCameraActive]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+      setCameraStream(null);
+      setIsCameraActive(false);
+      setActiveCameraField(null);
+      setCameraError("");
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (initialData) {
@@ -412,7 +534,69 @@ export default function CardFormModal({
                           }}
                         />
                         
-                        {formData[field.key] ? (
+                        {isCameraActive && activeCameraField === field.key ? (
+                          <div className="relative overflow-hidden rounded-2xl border border-indigo-500 bg-slate-950 p-4 flex flex-col items-center gap-3">
+                            {/* Video Viewport Container */}
+                            <div className="relative w-full aspect-[4/3] bg-black rounded-xl overflow-hidden border border-white/10 flex items-center justify-center">
+                              {cameraError ? (
+                                <div className="p-4 text-center text-xs text-rose-400 font-bold flex flex-col items-center gap-2">
+                                  <AlertCircle className="h-6 w-6" />
+                                  <p>{cameraError}</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => startCamera(field.key, facingMode)}
+                                    className="mt-2 px-3 py-1.5 rounded-lg bg-white/10 text-white hover:bg-white/15 transition text-[11px]"
+                                  >
+                                    Retry Camera Access
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <video
+                                    ref={videoRef}
+                                    playsInline
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute top-2 right-2 bg-slate-900/80 px-2 py-0.5 rounded text-[10px] font-mono text-indigo-400 border border-white/5 uppercase">
+                                    Live Stream ({facingMode === "environment" ? "Rear / Doc" : "Front"})
+                                  </div>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Camera Action Buttons */}
+                            <div className="flex items-center justify-between w-full px-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={stopCamera}
+                                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-white/5 text-xs text-slate-300 font-bold transition flex items-center gap-1.5"
+                              >
+                                Cancel
+                              </button>
+                              
+                              {!cameraError && (
+                                <button
+                                  type="button"
+                                  onClick={() => capturePhoto(field.key)}
+                                  className="px-5 py-2.5 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/20 active:scale-95 transition flex items-center gap-1.5 uppercase tracking-wide"
+                                >
+                                  <Camera className="h-4 w-4" /> Capture Photo
+                                </button>
+                              )}
+
+                              {!cameraError && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleFacingMode(field.key)}
+                                  className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-855 border border-white/5 text-slate-300 hover:text-white transition flex items-center justify-center"
+                                  title="Flip Camera"
+                                >
+                                  <RefreshCw className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ) : formData[field.key] ? (
                           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 flex flex-col md:flex-row items-center gap-4 transition hover:border-white/20">
                             <div className="h-16 w-16 rounded-xl bg-slate-900 border border-white/5 flex items-center justify-center shrink-0 overflow-hidden">
                               {formData[field.key].startsWith("data:image/") || formData[field.key].startsWith("data:image/svg") ? (
@@ -438,12 +622,20 @@ export default function CardFormModal({
                               </p>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => startCamera(field.key, "environment")}
+                                className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 hover:bg-indigo-500/20 transition"
+                                title="Re-take Photo with Camera"
+                              >
+                                <Camera className="h-4 w-4" />
+                              </button>
                               <label 
                                 htmlFor={`input-${field.key}`}
-                                className="cursor-pointer px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-350 transition"
+                                className="cursor-pointer px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-350 transition flex items-center gap-1"
                               >
-                                Replace
+                                <Upload className="h-3 w-3" /> Replace
                               </label>
                               <button
                                 type="button"
@@ -479,8 +671,7 @@ export default function CardFormModal({
                                 await processSelectedFile(field.key, file);
                               }
                             }}
-                            onClick={() => document.getElementById(`input-${field.key}`)?.click()}
-                            className={`group border-2 border-dashed border-white/10 bg-white/5 rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-500/5 transition duration-200 ${
+                            className={`group border-2 border-dashed border-white/10 bg-white/5 rounded-2xl p-6 flex flex-col items-center justify-center text-center transition duration-200 ${
                               hasError ? "border-rose-500 ring-2 ring-rose-500/20" : ""
                             }`}
                           >
@@ -495,11 +686,29 @@ export default function CardFormModal({
                               )}
                             </div>
                             <span className="text-sm font-bold text-slate-200">
-                              {isFileProcessing ? "Processing..." : "Select photo / scan or drag here"}
+                              {isFileProcessing ? "Processing..." : "Select Document Photo or PDF"}
                             </span>
-                            <span className="text-xs text-slate-400 mt-1 leading-normal max-w-xs">
-                              Supports Passport Photo, National ID PDFs or Cards (Max 2MB)
+                            <span className="text-xs text-slate-450 mt-1 leading-normal max-w-xs block">
+                              Drag and drop files here, or choose one of the options below:
                             </span>
+
+                            <div className="flex flex-col sm:flex-row items-center gap-2 mt-4 w-full max-w-xs">
+                              <button
+                                type="button"
+                                onClick={() => document.getElementById(`input-${field.key}`)?.click()}
+                                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 border border-white/10 text-xs font-bold text-slate-350 hover:bg-slate-800 hover:text-white hover:border-white/20 transition cursor-pointer"
+                              >
+                                <Upload className="h-3.5 w-3.5" /> Upload File
+                              </button>
+                              
+                              <button
+                                type="button"
+                                onClick={() => startCamera(field.key, "environment")}
+                                className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/20 border border-indigo-500/35 text-xs font-bold text-indigo-300 hover:bg-indigo-500/35 hover:text-indigo-200 transition cursor-pointer"
+                              >
+                                <Camera className="h-3.5 w-3.5" /> Capture Photo
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
